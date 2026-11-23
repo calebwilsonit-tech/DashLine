@@ -25,6 +25,8 @@ apk="DriveApp/build/Dashline-$ver.apk"
 cp DriveApp/build/Dashline-release.apk "$apk"
 
 git push origin main "v$ver"
-pre=""; [[ "$ver" == *-* ]] && pre="--prerelease"
-gh release create "v$ver" "$apk" --title "Dashline $ver" ${notes:+--notes "$notes"} ${notes:---generate-notes} $pre
+args=("v$ver" "$apk" --title "Dashline $ver")
+if [ -n "$notes" ]; then args+=(--notes "$notes"); else args+=(--generate-notes); fi
+[[ "$ver" == *-* ]] && args+=(--prerelease)
+gh release create "${args[@]}"
 echo "Released v$ver"
