@@ -72,6 +72,11 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: Installed Dashline Dev on the owner's Pixel 10 Pro XL. Release Gearslip was **uninstalled**
+  (permission conflict). Granted notification listener + phone/contacts/call-log/mic/BT permissions with adb. Rendered on the
+  Pixel with `CarPreviewActivity`: the **live YouTube Music session showed correctly** (title, artist, art, progress), and real
+  notifications showed. The phone has myQ (`com.chamberlain.android.liftmaster.myq`) and YouTube Music installed;
+  Google Android Auto (`gearhead`) is disabled. Next: owner runs `TRUCK_TEST_DASHLINE_1.md`.
 
 ## Known issues / risks
 - **Gearslip ran slowly on the truck.** The cause is unknown. Video settings look sane (HW H.264 Baseline at negotiated size, 800x480@30 = 8 Mbps). Suspects: extra features, Compose recomposition, encoder repeat-frame behavior. Get a Gearslip session log from the truck to confirm.
@@ -105,6 +110,8 @@ Hard constraints (from the owner, don't re-propose these):
     slow-mo to measure true end-to-end time. Design the UI to act on touch-down with no transition animations.
 - **USB transport dropped** after 149 s in that session (`read failed: EIO`, then the accessory detached).
   Cause unknown: cable, port, or the HU resetting. If it repeats, try another cable and compare logs.
+- The dashboard alert card shows any app's notification (e.g. Redfin). Consider limiting it to messaging apps plus
+  an allow-list setting.
 - Google's Android Auto (`com.google.android.projection.gearhead`) must be disabled or it grabs the USB accessory. Undo: `adb shell pm enable com.google.android.projection.gearhead`.
 - Gearslip is alpha. An upstream change can break cars that worked before. Pin to a known-good commit.
 - myQ AccessibilityService automation will break if myQ changes its UI. Plan a user-run "re-learn the button" setup.
