@@ -147,6 +147,7 @@ object DashAssistant {
         .put(fn("play_music", "Play a song, artist, album, playlist or genre on YouTube Music.", "query" to "What to play"))
         .put(fn("media_control", "Control what's playing.", "action" to "One of: pause, resume, next, previous"))
         .put(fn("garage_door", "Open or close the garage door (it toggles).", required = emptyList()))
+        .put(fn("navigate_to", "Start turn-by-turn directions to a place, address or business.", "destination" to "Where to go"))
         .put(fn("web_search", "Look up current information on the web.", "query" to "Search query"))
 
     private fun fn(name: String, description: String, vararg params: Pair<String, String>, required: List<String>? = null): JSONObject {
@@ -171,6 +172,10 @@ object DashAssistant {
                 "Okay, the garage door."
             }
             "web_search" -> search(key, model, args.optString("query"))
+            "navigate_to" -> {
+                DashNav.navigateTo(args.optString("destination"))
+                "Getting directions to ${args.optString("destination")}."
+            }
             else -> "Sorry, I can't do that yet."
         }
 
@@ -229,6 +234,10 @@ object DashAssistant {
                 Garage.press(context)
                 return "Okay, the garage door."
             }
+        }
+        Regex("^(?:navigate to|directions to|take me to|drive to|go to) (.+)$").find(t)?.let {
+            DashNav.navigateTo(it.groupValues[1])
+            return "Getting directions to ${it.groupValues[1]}."
         }
         Regex("^play (.+)$").find(t)?.let { return play(context, it.groupValues[1]) }
         return null

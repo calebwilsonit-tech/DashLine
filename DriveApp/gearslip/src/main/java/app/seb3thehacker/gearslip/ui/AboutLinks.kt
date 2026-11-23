@@ -46,8 +46,12 @@ internal object GearslipLinks {
     /** Gearslip's Monero address. Its row stays hidden while this is empty. */
     const val MONERO = "44gTVxQJY3cirBJ41J5i1bPUVnSkTMhn9esSp1kg9MHwJ3TUz8tkkigUTKwiok5zA5RZvNxyM4pqkAfPs79pPLfaNG21pCn"
     const val MATRIX = "https://matrix.to/#/!mf0_mgBd5KqKpc9FfX_wHp1jFCcwAtPrndIn_oGIyMk?via=matrix.org"
-    const val SOURCE = "https://github.com/twinksoftware/gearslip"
-    const val CARS = "$SOURCE/blob/main/CARS.md"
+    /** Dashline's own repository (the updater reads its releases too). */
+    const val SOURCE = "https://github.com/calebwilsonit-tech/DashLine"
+    /** The projects Dashline is built on, credited in About. */
+    const val GEARSLIP_SOURCE = "https://github.com/twinksoftware/gearslip"
+    const val VELA_SOURCE = "https://github.com/PimpinPumpkin/Vela"
+    const val CARS = "$GEARSLIP_SOURCE/blob/main/CARS.md"
     const val PRIVACY = "$SOURCE/blob/main/PRIVACY.md"
     const val TRANSLATE = "https://hosted.weblate.org/engage/gearslip/"
 
@@ -79,6 +83,8 @@ internal object GearslipLinks {
 /** The ways to support Gearslip: Liberapay first, Monero last, card once it's set up. */
 @Composable
 internal fun DonateRows() {
+    // Dashline: these are Gearslip's author's donation pages; not shown as if they were Dashline's.
+    if (DASHLINE_HIDE_GEARSLIP_DONATIONS) return
     val context = LocalContext.current
     val arrow = @Composable {
         Icon(
@@ -174,18 +180,18 @@ internal fun AboutLinkRows() {
         )
     }
     SettingsRow(
-        stringResource(R.string.about_matrix),
-        Modifier.clickable { GearslipLinks.open(context, GearslipLinks.MATRIX) },
-        subtitle = stringResource(R.string.about_matrix_sub),
-        icon = Icons.AutoMirrored.Filled.Send,
+        "Built on Gearslip and Vela",
+        Modifier.clickable { GearslipLinks.open(context, GearslipLinks.GEARSLIP_SOURCE) },
+        subtitle = "Dashline uses Gearslip (AGPL-3.0) for the car connection and Vela (GPL-3.0) for maps. Tap for Gearslip's source.",
+        icon = Icons.Filled.Favorite,
         trailing = arrow,
     )
     SettingsDivider()
     SettingsRow(
-        stringResource(R.string.about_translate),
-        Modifier.clickable { GearslipLinks.open(context, GearslipLinks.TRANSLATE) },
-        subtitle = stringResource(R.string.about_translate_sub),
-        icon = Icons.Filled.Edit,
+        "Vela Maps",
+        Modifier.clickable { GearslipLinks.open(context, GearslipLinks.VELA_SOURCE) },
+        subtitle = "The map engine: search, routes, traffic, turn-by-turn",
+        icon = Icons.Filled.Favorite,
         trailing = arrow,
     )
     SettingsDivider()
@@ -211,3 +217,6 @@ internal fun AboutLinkRows() {
         icon = Icons.Filled.Favorite,
     )
 }
+
+/** Dashline: Gearslip's donation rows and prompt stay hidden (they're its author's, not Dashline's). */
+internal const val DASHLINE_HIDE_GEARSLIP_DONATIONS = true

@@ -78,6 +78,32 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **Maps, rebrand, updater, publishing.**
+  - **Maps = Vela's `:core` engine + Dashline's own map UI.** Vela (github.com/PimpinPumpkin/Vela, GPL-3.0, compatible with
+    AGPL-3.0) is cloned in `upstream/Vela` (git-ignored). Its `:core` is built with Vela's own toolchain
+    (`cd upstream/Vela && ./gradlew :core:assembleRelease :osmand-shaded:shadowJar`; it needs the 4 OsmAnd jars from
+    Vela's `obf-runtime` release in `core/libs/`, a `local.properties`, and the `java { toolchain 17 }` block removed from
+    `osmand-shaded/build.gradle.kts` because only JDK 25 is installed). Outputs are copied to `DriveApp/vela/vela-core.aar` +
+    `osmand-java-relocated.jar` (the AAR already bundles osmand-shared-jvm, gnu-trove and kxml2; adding those again
+    gives duplicate classes). Built from Vela commit 09f9d84.
+  - `dash/DashNav.kt` hand-wires the objects Vela's Hilt graph would: `CoreModule.okHttpClient()`, `CalibrationStore`
+    (refreshed at start from Vela's GitHub), `GoogleSession`, `JsTransforms`, `DiagLog`, `CoreModule.routeEngine`,
+    `GoogleMapsDataSource`, `VoiceGuide`, `Haptics`, and `NavSession`. GPS goes from LocationManager into `NavSession.onLocation`.
+    Vela's voice is `muted` and its `onMuted` lines go to Gearslip `DirectionsVoice.speak` (new public hook), which plays them on the
+    car's guidance channel. No Cronet (Vela uses it for Google requests when present), so OkHttp only.
+  - `dash/DashMap.kt`: one MapLibre `MapView` (textureMode, OpenFreeMap liberty/dark) kept in `DashMapHolder` and
+    re-parented between the dashboard pane and the Map screen. It has route and position GeoJSON layers, a follow camera, a turn card
+    and trip bar, voice "Where to?", results, and a route preview with Go. The assistant has a `navigate_to` tool plus an
+    offline "navigate to X" fallback. Verified on the Pixel: the search returned 8 results, the route had 23 steps, and both render on the car frame.
+    **Not tested yet: a real drive with turn-by-turn.**
+  - Rebrand: `rebrand.py` swapped the standalone word "Gearslip" in strings (all locales), manifest labels and Kotlin
+    string literals (1,812 replacements). Internal names, packages, log files and URLs are untouched. The radio's AA icon label
+    is now "Dashline". About credits Gearslip and Vela. Gearslip's donation rows and prompt are hidden
+    (`DASHLINE_HIDE_GEARSLIP_DONATIONS`), and its chat and translation rows were removed.
+  - Updater: Gearslip's `UpdateChecker` now reads `api.github.com/repos/calebwilsonit-tech/DashLine/releases`. Versions come
+    from git tags `vX.Y.Z[-beta|-alpha]` (`gitVersion` in `gearslip/build.gradle.kts`). It needs release-signed APKs uploaded as
+    release assets (not `*debug*`), signed with one key forever (`keystore.properties`, never committed).
+  - Messages filter tightened: chat apps or anything with a reply action; Facebook/Twitter/Reddit excluded.
 - 2026-11-23: **Full-drive log (`Gearslip log-3.txt`, keyframe build).** Three sessions, 393 s / 197 s / ~230 s.
   - All-keyframes confirmed in the field: `key=` equaled `sent` all drive, frames ~31–36 KB, ~10 fps on a still screen, acks immediate,
     phone-side touch→frame median 47 ms (p90 82, max 134).

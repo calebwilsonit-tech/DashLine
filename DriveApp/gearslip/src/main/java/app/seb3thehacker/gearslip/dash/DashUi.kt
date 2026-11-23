@@ -87,6 +87,7 @@ fun DashUi() {
         app.seb3thehacker.gearslip.car.CarAssistant.init(context)
         app.seb3thehacker.gearslip.car.VoiceReply.init(context)
         DashText.init(context)
+        app.seb3thehacker.gearslip.car.DirectionsVoice.init(context)
         // GM radios turn Bluetooth music off while projecting, so the phone's sound must go over
         // the car link. Dictation uses the phone's own recognizer instead of Gearslip's ~900 MB
         // offline models.
@@ -191,7 +192,7 @@ fun DashUi() {
                 ) {
                     when (screen) {
                         DashScreen.Home -> Dashboard(open = { screen = it })
-                        DashScreen.Map -> MapScreen()
+                        DashScreen.Map -> DashMapScreen()
                         DashScreen.Music -> MusicScreen()
                         DashScreen.Phone -> ContactsScreen()
                         DashScreen.Messages -> MessagesScreen()
@@ -299,26 +300,15 @@ private fun Dashboard(open: (DashScreen) -> Unit) {
 @Composable
 private fun MapPane(modifier: Modifier, onTap: () -> Unit) {
     val t = LocalDashTheme.current
-    Tap(onTap = onTap, modifier = modifier, contentAlignment = Alignment.TopStart) {
-        // A quiet grid stands in for the map until the real one lands.
-        Canvas(Modifier.fillMaxSize()) {
-            val step = 40.dp.toPx()
-            val line = t.textDim.copy(alpha = 0.08f)
-            var x = 0f
-            while (x < size.width) { drawLine(line, Offset(x, 0f), Offset(x, size.height)); x += step }
-            var y = 0f
-            while (y < size.height) { drawLine(line, Offset(0f, y), Offset(size.width, y)); y += step }
-        }
-        Column(Modifier.padding(18.dp)) {
-            Clock(size = 54.sp)
-            Label(DateFormat.getDateInstance(DateFormat.FULL).format(Date()), 15.sp, t.textDim)
-            Spacer(Modifier.height(14.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                GlyphIcon(Glyph.Map, t.accent, 22.dp)
-                Spacer(Modifier.width(8.dp))
-                Label("Map — coming in the next build", 15.sp, t.textDim)
-            }
-        }
+    Box(modifier.clip(RoundedCornerShape(t.radius))) {
+        DashMapView(Modifier.fillMaxSize(), compact = true)
+        // Tap anywhere on the small map to open the full one.
+        Tap(onTap = onTap, onTapUp = true, modifier = Modifier.fillMaxSize(), color = Color.Transparent, pressedColor = Color(0x22000000), outline = false) {}
+        Box(
+            Modifier.align(Alignment.TopStart).padding(10.dp)
+                .clip(RoundedCornerShape(t.radius / 2)).background(t.panel.copy(alpha = 0.85f))
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+        ) { Clock(size = 22.sp) }
     }
 }
 
@@ -612,8 +602,7 @@ private fun MessagesScreen() {
     }
 }
 
-@Composable
-private fun MapScreen() = ComingSoon(Glyph.Map, "Map", "Google map with turn-by-turn directions is the next big piece.")
+
 
 
 

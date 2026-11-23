@@ -200,6 +200,21 @@ dependencies {
     implementation(libs.androidx.webkit)
     // The map behind a place list (PlaceListMapTemplate), which the host draws, not the app.
     implementation(libs.maplibre.android)
+
+    // Dashline maps: Vela's :core (GPL-3.0, github.com/PimpinPumpkin/Vela) prebuilt as an AAR with
+    // Vela's own toolchain, plus the OsmAnd router jars it links against. See HANDOFF.md.
+    implementation(files("../vela/vela-core.aar"))
+    // The AAR already carries osmand-shared-jvm, gnu-trove and kxml2 in its libs/; only the
+    // relocated OsmAnd router (a project dependency in Vela's build) is added here.
+    implementation(files("../vela/osmand-java-relocated.jar"))
+    implementation("com.squareup.okhttp3:okhttp:5.5.0")
+    implementation("org.mozilla:rhino-runtime:1.7.15.1")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("commons-logging:commons-logging:1.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+    implementation(libs.kotlinx.serialization.json)
+    // Only for the annotations and generated factories inside the AAR; Dashline wires Vela by hand.
+    implementation("com.google.dagger:hilt-android:2.60.1")
     testImplementation(libs.junit)
 }
 

@@ -249,6 +249,9 @@ object DirectionsVoice {
         }
     }
 
+    /** Dashline: speak one navigation line (from Vela's engine) on the car's directions channel. */
+    fun speak(text: String) = say(text)
+
     /** Newest wins: a prompt still waiting when the next one arrives is already out of date. */
     private fun say(text: String) {
         val id = ++latest

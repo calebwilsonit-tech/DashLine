@@ -42,8 +42,11 @@ object DashMessages {
         "com.google.android.dialer", // missed calls and voicemail
     )
 
+    /** Social apps that post conversation-styled notifications that aren't messages (Facebook memories). */
+    private val NOT_CHAT = setOf("com.facebook.katana", "com.facebook.lite", "com.twitter.android", "com.reddit.frontpage")
+
     fun isMessage(n: CarNotification): Boolean =
-        n.packageName in CHAT_APPS || n.reply != null || n.lines.isNotEmpty()
+        n.packageName !in NOT_CHAT && (n.packageName in CHAT_APPS || n.reply != null)
 
     /** Muted until the car disconnects, like Android Auto's per-conversation mute. */
     private val _muted = MutableStateFlow<Set<String>>(emptySet())

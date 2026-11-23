@@ -18,6 +18,7 @@ import app.seb3thehacker.gearslip.car.CarUi
 import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 /**
  * Debug-only harness: runs the real car UI on a virtual display (the same path a head unit
@@ -122,6 +123,24 @@ class CarPreviewActivity : ComponentActivity() {
             }
             app.seb3thehacker.gearslip.dash.VideoTuning.set(before)
         }.start()
+
+        // Dashline maps without speaking: --es navsearch "costco" searches, then previews the top result.
+        intent.getStringExtra("navsearch")?.let { q ->
+            kotlinx.coroutines.MainScope().launch {
+                kotlinx.coroutines.delay(3000)
+                app.seb3thehacker.gearslip.dash.DashNav.init(this@CarPreviewActivity)
+                app.seb3thehacker.gearslip.dash.DashNav.search(q)
+                val s = kotlinx.coroutines.withTimeoutOrNull(20_000) {
+                    app.seb3thehacker.gearslip.dash.DashNav.state.first { it.phase != app.seb3thehacker.gearslip.dash.DashNav.Phase.SEARCHING }
+                }
+                GearslipLog.i("navsearch: ${s?.phase} ${s?.results?.size ?: 0} results ${s?.error.orEmpty()}")
+                s?.results?.firstOrNull()?.let { app.seb3thehacker.gearslip.dash.DashNav.preview(it) }
+                val r = kotlinx.coroutines.withTimeoutOrNull(25_000) {
+                    app.seb3thehacker.gearslip.dash.DashNav.state.first { it.phase != app.seb3thehacker.gearslip.dash.DashNav.Phase.ROUTING }
+                }
+                GearslipLog.i("navsearch: route ${r?.phase} ${r?.routes?.firstOrNull()?.let { "${(it.distanceMeters / 1609).toInt()} mi, ${(it.durationSeconds / 60).toInt()} min, ${it.maneuvers.size} steps" }} ${r?.error.orEmpty()}")
+            }
+        }
 
         // Dashline assistant without speaking: --es ask "call sam" logs what it would answer.
         intent.getStringExtra("ask")?.let { q ->
