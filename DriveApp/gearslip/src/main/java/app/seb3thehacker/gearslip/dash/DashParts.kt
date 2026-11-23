@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 /**
  * A touch target that acts the instant a finger lands, not when it lifts.
@@ -207,4 +208,56 @@ fun GlyphIcon(glyph: Glyph, color: Color, size: Dp = 28.dp, modifier: Modifier =
             }, color, style = Stroke(width = w * 0.12f, cap = StrokeCap.Round))
         }
     }
+}
+
+/**
+ * A button that fires only after being held for [holdMs], for things a stray bump mustn't do
+ * (the garage door). The fill sweeps across while held; letting go early cancels.
+ */
+@Composable
+fun HoldButton(
+    onFire: () -> Unit,
+    modifier: Modifier = Modifier,
+    holdMs: Int = 600,
+    enabled: Boolean = true,
+    color: Color? = null,
+    fillColor: Color? = null,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val t = LocalDashTheme.current
+    val s = RoundedCornerShape(t.radius)
+    val base = color ?: t.panel
+    val fill = fillColor ?: t.accent.copy(alpha = 0.55f)
+    val progress = remember { androidx.compose.animation.core.Animatable(0f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val fire by rememberUpdatedState(onFire)
+    val withOutline = if (t.outline != Color.Transparent) Modifier.border(1.dp, t.outline, s) else Modifier
+    Box(
+        modifier
+            .clip(s)
+            .then(withOutline)
+            .drawBehind {
+                drawRect(base)
+                val p = progress.value
+                if (p > 0f) drawRect(fill, size = Size(size.width * p, size.height))
+            }
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    val job = scope.launch {
+                        progress.snapTo(0f)
+                        progress.animateTo(1f, androidx.compose.animation.core.tween(holdMs, easing = androidx.compose.animation.core.LinearEasing))
+                        fire()
+                    }
+                    waitForUpOrCancellation()
+                    scope.launch {
+                        if (job.isActive) job.cancel()
+                        progress.snapTo(0f)
+                    }
+                }
+            },
+        contentAlignment = Alignment.Center,
+        content = content,
+    )
 }

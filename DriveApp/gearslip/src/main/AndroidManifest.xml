@@ -104,6 +104,8 @@
          LAUNCHER query below to find, so the setup guide's Android Auto check needs this to see
          whether the package is installed at all. -->
     <package android:name="com.google.android.projection.gearhead" />
+    <!-- Dashline's garage button drives the official myQ app. -->
+    <package android:name="com.chamberlain.android.liftmaster.myq" />
     <!-- The opt-in usage note names the OS: GrapheneOS's setup app and /e/OS's app store give
          them away (UsageStats.osName). -->
     <package android:name="app.grapheneos.setupwizard" />
@@ -328,5 +330,31 @@
                 <action android:name="android.companion.CompanionDeviceService" />
             </intent-filter>
         </service>
+        <!-- Dashline: presses the garage door button inside the official myQ app. Watches myQ
+             only (packageNames in the config), never any other app. -->
+        <service
+            android:name=".dash.GarageService"
+            android:exported="true"
+            android:label="Dashline garage button"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/dash_garage_service" />
+        </service>
+
+        <!-- Dashline: turns the phone's screen on and past a trusted-device lock screen so myQ
+             can be opened while the phone sits dark in a pocket or mount. -->
+        <activity
+            android:name=".dash.GarageWakeActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 </manifest>

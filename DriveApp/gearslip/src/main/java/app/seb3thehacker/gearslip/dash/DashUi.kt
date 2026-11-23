@@ -241,7 +241,10 @@ private fun Clock(size: androidx.compose.ui.unit.TextUnit, modifier: Modifier = 
 @Composable
 private fun Dashboard(open: (DashScreen) -> Unit) {
     Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        MapPane(Modifier.weight(1.45f).fillMaxHeight(), onTap = { open(DashScreen.Map) })
+        Column(Modifier.weight(1.45f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            MapPane(Modifier.weight(1f).fillMaxWidth(), onTap = { open(DashScreen.Map) })
+            GarageTile(Modifier.fillMaxWidth().height(76.dp))
+        }
         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             MusicCard(Modifier.weight(1.25f).fillMaxWidth(), onOpen = { open(DashScreen.Music) })
             AlertCard(Modifier.weight(1f).fillMaxWidth(), onOpen = { open(DashScreen.Messages) })
@@ -509,8 +512,77 @@ private fun MapScreen() = ComingSoon(Glyph.Map, "Map", "Google map with turn-by-
 @Composable
 private fun PhoneScreen() = ComingSoon(Glyph.Phone, "Phone", "Recents, favourites and a keypad are coming. Calls already show on the dashboard.")
 
+/** The dashboard's garage strip: hold to open/close, with myQ's last known status. */
 @Composable
-private fun GarageScreen() = ComingSoon(Glyph.Garage, "Garage", "One tap will open the door through the myQ app on your phone. Setup comes in a later build.")
+private fun GarageTile(modifier: Modifier) {
+    val t = LocalDashTheme.current
+    val context = LocalContext.current.applicationContext
+    val g by Garage.state.collectAsState()
+    HoldButton(onFire = { Garage.press(context) }, modifier = modifier, enabled = !g.busy) {
+        Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            GlyphIcon(Glyph.Garage, t.accent, 34.dp)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Label(g.doorName, 17.sp, weight = FontWeight.SemiBold)
+                Label(garageLine(g), 13.sp, if (g.phase == Garage.Phase.FAILED) Color(0xFFFF6B6B) else t.textDim)
+            }
+            Label(if (g.busy) "…" else "Hold", 14.sp, t.textDim)
+        }
+    }
+}
+
+private fun garageLine(g: Garage.State): String = when {
+    g.message.isNotEmpty() && g.phase != Garage.Phase.IDLE -> g.message
+    g.status.isNotEmpty() -> "${g.status} · ${ago(g.statusAt)}"
+    else -> "Hold to open or close"
+}
+
+private fun ago(at: Long): String {
+    if (at == 0L) return ""
+    val min = (android.os.SystemClock.elapsedRealtime() - at) / 60_000
+    return if (min < 1) "just now" else "$min min ago"
+}
+
+@Composable
+private fun GarageScreen() {
+    val t = LocalDashTheme.current
+    val context = LocalContext.current.applicationContext
+    val g by Garage.state.collectAsState()
+    val on by Garage.serviceOn.collectAsState()
+    Card(Modifier.fillMaxSize()) {
+        Column(
+            Modifier.fillMaxSize().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Label(g.doorName, 26.sp, weight = FontWeight.Bold)
+            Label(if (g.status.isNotEmpty()) "${g.status} · ${ago(g.statusAt)}" else "Status shows after the first use", 16.sp, t.textDim)
+            Spacer(Modifier.height(16.dp))
+            HoldButton(
+                onFire = { Garage.press(context) },
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                enabled = on && !g.busy,
+                color = t.panelHi,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    GlyphIcon(Glyph.Garage, if (on) t.accent else t.textDim, 72.dp)
+                    Spacer(Modifier.height(10.dp))
+                    Label(if (g.busy) g.message else "Hold to open / close", 20.sp, weight = FontWeight.SemiBold)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Label(
+                when {
+                    !on -> "Turn on \"Dashline garage button\" in the phone's Accessibility settings"
+                    !g.busy && g.message.isNotEmpty() && g.phase != Garage.Phase.IDLE -> g.message
+                    else -> "Works through the myQ app on your phone. The phone needs to be unlocked or on a trusted device."
+                },
+                14.sp,
+                if (g.phase == Garage.Phase.FAILED || !on) Color(0xFFFF6B6B) else t.textDim,
+                maxLines = 2,
+            )
+        }
+    }
+}
 
 @Composable
 private fun ComingSoon(glyph: Glyph, title: String, body: String) {
@@ -533,6 +605,7 @@ private fun ComingSoon(glyph: Glyph, title: String, body: String) {
 @Composable
 private fun SettingsScreen(open: (DashScreen) -> Unit) {
     val t = LocalDashTheme.current
+    val context = LocalContext.current.applicationContext
     val current by DashPrefs.theme.collectAsState()
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Label("Theme", 20.sp, weight = FontWeight.Bold)
@@ -550,6 +623,9 @@ private fun SettingsScreen(open: (DashScreen) -> Unit) {
             }
             Tap(onTap = { open(DashScreen.Classic) }, modifier = Modifier.weight(1f).fillMaxHeight()) {
                 Label("Gearslip classic UI", 16.sp, weight = FontWeight.SemiBold)
+            }
+            Tap(onTap = { Garage.press(context, dryRun = true) }, modifier = Modifier.weight(1f).fillMaxHeight()) {
+                Label("Garage test (no press)", 16.sp, weight = FontWeight.SemiBold)
             }
         }
     }

@@ -44,6 +44,12 @@ Hard constraints (from the owner, don't re-propose these):
     - `DashParts.kt`: `Tap` (acts on touch-DOWN, pressed colour drawn without recomposition), `Card`, `Label`, `GlyphIcon` (Canvas-drawn icons).
     - `DashTheme.kt`: `DashTheme` and `DashThemes` (Carbon, Denali Chrome, Neon Night), plus `DashPrefs` (SharedPreferences "dashline").
     - `PhoneMedia.kt`: MediaSession remote control (YouTube Music etc.) through notification-listener access.
+    - `Garage.kt`: the garage button. `Garage` state machine, plus `GarageService` (an AccessibilityService limited to myQ
+      by `res/xml/dash_garage_service.xml`), plus `GarageWakeActivity` (turns the screen on and calls `requestDismissKeyguard`).
+      Flow: wake the phone, dismiss the keyguard (works without a PIN only under a trusted-device unlock), launch myQ, poll for
+      `device_state_icon` until it's on screen and stable, `ACTION_CLICK` (falls back to a gesture tap), read `device_status`,
+      go HOME, and LOCK_SCREEN if the phone was dark before. 12 s timeout. myQ 5.325 tags: `device_name`, `device_status`,
+      `device_state_icon` (Compose testTags exposed as bare view ids).
   - `DashUi()` replaced `CarUi()` at all 4 call sites: `GearslipActivity.showCarUi`, `LauncherActivity`, `ui/CarPreviewScreen`, and debug `CarPreviewActivity`.
 - `upstream/Gearslip/`: pristine Gearslip clone for diffing (git-ignored).
 - `screenshots/`: renders of the car screen from the emulator.
@@ -72,6 +78,8 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: Built the garage button. **Dry run on the owner's Pixel found myQ's door button 0.3 s after the request**
+  (no press) and returned home. With the phone locked, it correctly reported "Phone is locked". No real press tested yet.
 - 2026-11-23: Installed Dashline Dev on the owner's Pixel 10 Pro XL. Release Gearslip was **uninstalled**
   (permission conflict). Granted notification listener + phone/contacts/call-log/mic/BT permissions with adb. Rendered on the
   Pixel with `CarPreviewActivity`: the **live YouTube Music session showed correctly** (title, artist, art, progress), and real
@@ -112,6 +120,12 @@ Hard constraints (from the owner, don't re-propose these):
   Cause unknown: cable, port, or the HU resetting. If it repeats, try another cable and compare logs.
 - The dashboard alert card shows any app's notification (e.g. Redfin). Consider limiting it to messaging apps plus
   an allow-list setting.
+- **Garage needs the phone unlocked.** A PIN lock can't be dismissed by an app, so the phone must be unlocked or on
+  Extend Unlock with the truck's Bluetooth as a trusted device. To verify: whether `GLOBAL_ACTION_LOCK_SCREEN` (used to put the phone
+  back to sleep) counts as a manual lock that pauses Extend Unlock. If it does, drop that step and let the screen time out.
+- Enabling the garage service with adb: `settings put secure enabled_accessibility_services app.dashline.dev/app.seb3thehacker.gearslip.dash.GarageService`.
+  This overwrites the list; the phone had none before. A `force-stop` of Dashline unbinds it; re-put the setting to rebind it.
+  The garage UI uses a 600 ms press-and-hold (`HoldButton`) so a bump can't move the door.
 - Google's Android Auto (`com.google.android.projection.gearhead`) must be disabled or it grabs the USB accessory. Undo: `adb shell pm enable com.google.android.projection.gearhead`.
 - Gearslip is alpha. An upstream change can break cars that worked before. Pin to a known-good commit.
 - myQ AccessibilityService automation will break if myQ changes its UI. Plan a user-run "re-learn the button" setup.
