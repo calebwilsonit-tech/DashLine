@@ -1,39 +1,27 @@
-# Truck test #1: Dashline first build
+# Truck test: Dashline 0.1.0
 
-Gearslip has been uninstalled from the Pixel and **Dashline Dev** is installed.
-Google's Android Auto is still turned off.
+Installed on the phone: **Dashline 0.1.0** (the release build; "Dashline Dev" was removed).
+Google's Android Auto stays turned off.
 
-## Before you go (on the phone, about 2 min)
-1. Unplug from the PC.
-2. Open **Dashline Dev**. It's Gearslip's setup underneath, so it asks for the **certificate** again.
-   Pick the **download** option, same as before. Skip anything it asks that you don't want.
-   Music, notification and phone permissions are already granted.
+## Before you go (phone, about 2 min)
+1. Open **Dashline** and run its setup. It asks for the car **certificate** again: pick **download**.
+2. Optional: open **Dashline settings** (second icon) to choose the voice assistant and music auto-play.
 
 ## In the truck
-3. Plug in the same way as before. If the phone asks which app to open, choose **Dashline Dev**.
-4. Try out:
-   - **Dashboard:** start YouTube Music on the phone, then use play/pause/skip on the radio.
-   - **Rail buttons** (Home, Map, Music, Phone, Messages, Garage, Settings) and the radio's own hard buttons.
-   - **Settings → Theme:** try all three.
-   - **How it *feels*:** is tapping faster than Gearslip was?
-5. **Latency test** (Settings → Touch latency test):
-   - Set your phone or a second phone to **slow-motion video** (240 fps is best).
-   - Film the radio screen with your finger in view. Tap the screen about 10 times, with a pause between taps.
-   - Each tap flips the screen black↔white the moment the radio sends the touch to the phone.
-   - Send me the video, or count the slow-mo frames yourself from fingertip contact to the flip.
-
-## Garage (new)
-- With the phone **screen off**, connected to the truck (Extend Unlock trusted device), **hold** the garage strip
-  under the clock on the dashboard for about half a second. The phone screen should light up briefly, myQ opens, the door moves,
-  and the phone goes dark again.
-- **Then try it a second time.** This checks whether putting the phone back to sleep paused Extend Unlock. If the second
-  press says "Phone is locked", tell me and I'll change how it goes back to sleep.
+3. Plug in. If asked which app to open, pick **Dashline**.
+4. **Sound:** music should start by itself and play through the truck speakers.
+5. **Speed:** taps should respond right away (every frame is now a full keyframe).
+6. **No drops:** press a radio button (RADIO, MEDIA, home), then go back to Dashline. Do it a few times. It
+   should stay connected (the video keep-alive).
+7. **Maps:** tap the map, then **Where to?**, and say a place. Pick a result, check the time and distance, tap **Go**.
+   Turn instructions should be spoken through the truck. End the trip when done.
+8. **Assistant:** tap the orange mic or press the steering-wheel voice button. Ask something. Check:
+   does the bar at the bottom show what it heard and said, and does the answer play in the truck or on the phone?
+9. **Steering-wheel buttons:** next / previous / play-pause should control the music.
+10. **Messages and contacts:** try Reply on a text, and Call or Text from the phone icon.
+11. **Garage:** with the phone screen off, **hold** the garage strip. Then do it again.
+    If it says "Unlock your phone to finish", unlock it with your fingerprint; the door should move.
 
 ## Afterwards
-6. Send me the log: **Dashline Dev → Logs → Earlier →** the truck session **→ Share**.
-   Save it to the project folder, or attach it.
-7. Tell me what felt slow, ugly, or wrong.
-
-## Known gaps in this build
-Map and the Phone keypad/recents are placeholders. Message replies aren't in Dashline yet.
-"Gearslip classic UI" in Settings still has all of Gearslip's features if you need them.
+12. Send the log: **Dashline → Logs → Earlier →** the drive **→ Share**.
+13. Tell me what felt slow, wrong, or ugly.
