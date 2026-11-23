@@ -78,6 +78,16 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **Owner prefers the phone's own Google Assistant/Gemini** (the power-button one) with a bar on the radio.
+  `dash/PhoneAssistant.kt`: the mic button and the steering-wheel voice key (`CarKeys.voice`) call `GarageWakeActivity` (FOR_ASSISTANT: screen on,
+  try keyguard dismiss) and then `ACTION_VOICE_COMMAND` (falling back to `ACTION_ASSIST`), started through the helper accessibility service.
+  The helper's config now also covers `com.google.android.googlequicksearchbox` and `com.google.android.apps.bard`. Their window text is read
+  into `PhoneAssistant.state.lines` and shown by `PhoneAssistantBar` at the bottom of the radio (Close = GLOBAL_ACTION_BACK). The bar ends when
+  the assistant window goes away, after 6 s with no window, or after 90 s. Android can't put the real panel on the car display.
+  **Unknown: whether the assistant's spoken replies reach the truck** (USAGE_ASSISTANT isn't capturable; may play from the phone).
+  `DashPrefs.Assistant` = PHONE (default) | DASHLINE (the Gemini-API assistant below), chosen in the phone's "Dashline settings".
+  Also fixed: **steering-wheel media keys did nothing** (they went to Gearslip's unused CarMedia); `CarKeys` now falls back to `PhoneMedia`.
+  Not tested on the Pixel yet (unplugged). Test: preview harness tap on the mic (38,58), then check the log for "assistant:" and that the bar renders.
 - 2026-11-23: **Voice assistant + music auto-play.**
   - `dash/DashAssistant.kt`: Gearslip's `CarAssistant` listens (mic button at the top of the rail, or the steering-wheel voice key)
     and speaks. DashUi collects `CarAssistant.pendingCommand`, then `DashAssistant.handle`, then `CarAssistant.reply`. With a Gemini key it calls

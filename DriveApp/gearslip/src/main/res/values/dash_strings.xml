@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="dash_garage_description">Lets Dashline open and close your garage door from the car screen by pressing the door button in the myQ app. It only looks at the myQ app.</string>
+    <string name="dash_garage_description">Lets Dashline open and close your garage door by pressing the door button in the myQ app, and show what your Google Assistant says on the car screen. It only looks at the myQ and Google assistant apps.</string>
 </resources>

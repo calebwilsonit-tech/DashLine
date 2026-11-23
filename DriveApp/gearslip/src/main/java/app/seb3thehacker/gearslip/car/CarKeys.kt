@@ -98,7 +98,16 @@ object CarKeys {
         // then ended the session (issue #43).
         val media = CarServices.mediaOrNull()
         if (media == null && keyCode in MEDIA_KEYS) {
-            GearslipLog.i("keys: $keyCode before the car shows Gearslip - no media app to send it to yet")
+            // Dashline doesn't use Gearslip's media browser: the wheel drives the phone's player.
+            main.post {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> app.seb3thehacker.gearslip.dash.PhoneMedia.playPause()
+                    KeyEvent.KEYCODE_MEDIA_PLAY -> app.seb3thehacker.gearslip.dash.PhoneMedia.play()
+                    KeyEvent.KEYCODE_MEDIA_PAUSE, KeyEvent.KEYCODE_MEDIA_STOP -> app.seb3thehacker.gearslip.dash.PhoneMedia.pause()
+                    KeyEvent.KEYCODE_MEDIA_NEXT -> app.seb3thehacker.gearslip.dash.PhoneMedia.next()
+                    KeyEvent.KEYCODE_MEDIA_PREVIOUS -> app.seb3thehacker.gearslip.dash.PhoneMedia.previous()
+                }
+            }
             return true
         }
         when (keyCode) {
@@ -138,7 +147,13 @@ object CarKeys {
      * assistant.
      */
     private fun voice() = main.post {
-        if (!VoiceReply.onVoiceKey()) CarAssistant.start()
+        if (VoiceReply.onVoiceKey()) return@post
+        val context = appContext
+        if (context != null && app.seb3thehacker.gearslip.dash.PhoneAssistant.wantsVoiceKey()) {
+            app.seb3thehacker.gearslip.dash.PhoneAssistant.launch(context)
+        } else {
+            CarAssistant.start()
+        }
     }
 
     /** Answers a ringing call; with nothing ringing, opens the phone screen. */

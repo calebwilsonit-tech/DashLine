@@ -11,4 +11,4 @@
     android:canPerformGestures="true"
     android:description="@string/dash_garage_description"
     android:notificationTimeout="200"
-    android:packageNames="com.chamberlain.android.liftmaster.myq" />
+    android:packageNames="com.chamberlain.android.liftmaster.myq,com.google.android.googlequicksearchbox,com.google.android.apps.bard" />

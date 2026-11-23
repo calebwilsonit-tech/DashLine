@@ -143,6 +143,11 @@ internal fun VoiceOverlay(modifier: Modifier) {
     val reply by VoiceReply.state.collectAsState()
     val text by DashText.state.collectAsState()
     val assistant by app.seb3thehacker.gearslip.car.CarAssistant.state.collectAsState()
+    val phone by PhoneAssistant.state.collectAsState()
+    if (phone.active || phone.error.isNotEmpty()) {
+        PhoneAssistantBar(phone, modifier)
+        return
+    }
 
     val replying = reply.phase != VoiceReply.Phase.IDLE
     val texting = text.phase != DashText.Phase.IDLE
@@ -224,6 +229,42 @@ internal fun VoiceOverlay(modifier: Modifier) {
             }
             Tap(onTap = onCancel, modifier = Modifier.size(100.dp, 52.dp), color = t.panel) {
                 Label("Cancel", 16.sp)
+            }
+        }
+    }
+}
+
+
+/** The phone assistant mirrored onto the radio: its latest words, and Close. */
+@Composable
+private fun PhoneAssistantBar(s: PhoneAssistant.State, modifier: Modifier) {
+    val t = LocalDashTheme.current
+    Box(
+        modifier
+            .padding(start = 86.dp, end = 10.dp, bottom = 10.dp)
+            .fillMaxWidth()
+            .height(120.dp)
+            .clip(RoundedCornerShape(t.radius))
+            .background(t.panelHi),
+    ) {
+        Row(Modifier.fillMaxSize().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(44.dp).clip(CircleShape).background(t.accent), contentAlignment = Alignment.Center) {
+                GlyphIcon(Glyph.Mic, t.bgBottom, 24.dp)
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                if (s.error.isNotEmpty()) {
+                    Label(s.error, 16.sp, Color(0xFFFF6B6B), FontWeight.SemiBold, maxLines = 2)
+                } else {
+                    Label("Assistant", 13.sp, t.accent, FontWeight.SemiBold)
+                    s.lines.takeLast(2).forEachIndexed { i, line ->
+                        Label(line, if (i == s.lines.takeLast(2).lastIndex) 18.sp else 14.sp, if (i == s.lines.takeLast(2).lastIndex) t.text else t.textDim, maxLines = 2)
+                    }
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            Tap(onTap = PhoneAssistant::close, modifier = Modifier.size(100.dp, 52.dp), color = t.panel) {
+                Label("Close", 16.sp)
             }
         }
     }

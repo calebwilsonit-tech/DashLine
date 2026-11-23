@@ -220,6 +220,7 @@ private val railItems = listOf(
 @Composable
 private fun Rail(current: DashScreen, onSelect: (DashScreen) -> Unit) {
     val t = LocalDashTheme.current
+    val context = LocalContext.current.applicationContext
     Column(
         Modifier
             .width(76.dp)
@@ -231,7 +232,10 @@ private fun Rail(current: DashScreen, onSelect: (DashScreen) -> Unit) {
         Clock(size = 15.sp)
         // The assistant: ask anything, or "call Mom", "text Sam", "play Zach Bryan".
         Tap(
-            onTap = { app.seb3thehacker.gearslip.car.CarAssistant.start() },
+            onTap = {
+                if (PhoneAssistant.wantsVoiceKey()) PhoneAssistant.launch(context)
+                else app.seb3thehacker.gearslip.car.CarAssistant.start()
+            },
             modifier = Modifier.size(56.dp, 48.dp),
             shape = RoundedCornerShape(24.dp),
             color = t.accent,

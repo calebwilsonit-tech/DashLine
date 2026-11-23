@@ -56,7 +56,19 @@ class DashSettingsActivity : ComponentActivity() {
                     ) {
                         Text("Dashline settings", style = MaterialTheme.typography.headlineSmall)
 
-                        Text("Voice assistant (Gemini)", style = MaterialTheme.typography.titleMedium)
+                        val assistant by DashPrefs.assistant.collectAsState()
+                        Text("Voice assistant", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "What the radio's mic button and the steering-wheel voice button start.",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        for (a in DashPrefs.Assistant.entries) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                androidx.compose.material3.RadioButton(selected = a == assistant, onClick = { DashPrefs.setAssistant(a) })
+                                Text(a.label)
+                            }
+                        }
+                        Text("Dashline assistant (Gemini API)", style = MaterialTheme.typography.titleMedium)
                         Text(
                             "Dashline's assistant uses your own free Gemini API key from Google AI Studio. " +
                                 "It's stored only on this phone. Without one, the assistant still handles " +

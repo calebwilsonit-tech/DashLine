@@ -279,7 +279,9 @@ class GarageService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event?.packageName == Garage.MYQ) Garage.onMyQEvent(this)
+        val pkg = event?.packageName?.toString()
+        if (pkg == Garage.MYQ) Garage.onMyQEvent(this)
+        else if (pkg in PhoneAssistant.PACKAGES) PhoneAssistant.onAssistantEvent(this)
     }
 
     override fun onInterrupt() = Unit
@@ -295,9 +297,29 @@ class GarageService : AccessibilityService() {
  * A trusted-device unlock dismisses without a PIN; a real lock can't be, and that's reported.
  */
 class GarageWakeActivity : Activity() {
+    companion object {
+        const val EXTRA_FOR = "for"
+        const val FOR_ASSISTANT = "assistant"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val keyguard = getSystemService(KeyguardManager::class.java)
+        if (intent.getStringExtra(EXTRA_FOR) == FOR_ASSISTANT) {
+            // The assistant runs over the lock screen too: try to unlock (trusted device), and
+            // start it whatever the answer.
+            if (keyguard == null || !keyguard.isKeyguardLocked) {
+                PhoneAssistant.screenReady(this)
+                finish()
+                return
+            }
+            keyguard.requestDismissKeyguard(this, object : KeyguardManager.KeyguardDismissCallback() {
+                override fun onDismissSucceeded() { PhoneAssistant.screenReady(this@GarageWakeActivity); finish() }
+                override fun onDismissCancelled() { PhoneAssistant.screenReady(this@GarageWakeActivity); finish() }
+                override fun onDismissError() { PhoneAssistant.screenReady(this@GarageWakeActivity); finish() }
+            })
+            return
+        }
         if (keyguard == null || !keyguard.isKeyguardLocked) {
             Garage.unlocked(this)
             finish()

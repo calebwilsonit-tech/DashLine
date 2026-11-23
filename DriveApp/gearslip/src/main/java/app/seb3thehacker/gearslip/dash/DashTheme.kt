@@ -77,6 +77,21 @@ object DashPrefs {
     private const val KEY_GEMINI = "gemini_key"
     private const val KEY_MODEL = "gemini_model"
     private const val KEY_AUTOPLAY = "autoplay"
+    private const val KEY_ASSISTANT = "assistant"
+
+    enum class Assistant(val label: String) {
+        PHONE("Phone's Google Assistant / Gemini"),
+        DASHLINE("Dashline assistant (Gemini API key)"),
+    }
+
+    private val _assistant = MutableStateFlow(Assistant.PHONE)
+    /** Which assistant the mic button and the steering-wheel voice key start. */
+    val assistant: StateFlow<Assistant> = _assistant.asStateFlow()
+
+    fun setAssistant(a: Assistant) {
+        _assistant.value = a
+        prefs()?.edit()?.putString(KEY_ASSISTANT, a.name)?.apply()
+    }
     const val DEFAULT_MODEL = "gemini-flash-latest"
 
     private val _autoPlay = MutableStateFlow(true)
@@ -94,6 +109,7 @@ object DashPrefs {
         _theme.value = prefs()?.getString(KEY_THEME, null) ?: DashThemes.Carbon.id
         VideoTuning.load(prefs()?.getString(KEY_VIDEO, null))
         _autoPlay.value = prefs()?.getBoolean(KEY_AUTOPLAY, true) ?: true
+        _assistant.value = Assistant.entries.firstOrNull { it.name == prefs()?.getString(KEY_ASSISTANT, null) } ?: Assistant.PHONE
     }
 
     fun setTheme(id: String) {
