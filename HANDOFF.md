@@ -78,6 +78,21 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **Voice assistant + music auto-play.**
+  - `dash/DashAssistant.kt`: Gearslip's `CarAssistant` listens (mic button at the top of the rail, or the steering-wheel voice key)
+    and speaks. DashUi collects `CarAssistant.pendingCommand`, then `DashAssistant.handle`, then `CarAssistant.reply`. With a Gemini key it calls
+    `generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` (key in the `x-goog-api-key` header) with function
+    tools: call_contact, text_contact, play_music, media_control, garage_door, web_search. web_search triggers a second request with
+    the `google_search` grounding tool. It keeps the last 6 turns, reset on disconnect. Default model is `gemini-flash-latest`
+    (alias, changeable in settings). With no key or no network, a keyword fallback handles call/text/play/pause/next/garage.
+  - `dash/DashSettingsActivity.kt`: a second launcher icon, **"Dashline settings"**, where the owner pastes their own AI Studio key
+    (stored in private SharedPreferences "dashline", never logged) and toggles auto-play.
+  - Auto-play: on DashUi start it waits for `CarAudio.capture == ON` (up to 8 s) and then calls `PhoneMedia.autoPlay`, which plays the last
+    session or sends a PLAY media key. `PhoneMedia.playFromSearch` uses YT Music's session `playFromSearch`, or the
+    MEDIA_PLAY_FROM_SEARCH intent launched through `Garage.service` (the accessibility service is exempt from background-start limits).
+  - `DashText.startWith` handles "text Sam I'm on my way" (straight to read-back and countdown).
+  - Debug: `CarPreviewActivity --es ask "call sam"` logs the answer. Verified on the emulator (fallback matched "Sam Rivera").
+    **The Gemini path and a real call/text/play from voice aren't tested yet** (no key yet; Pixel unplugged).
 - 2026-11-23: **Audio, messaging and contacts.**
   - *Silent truck:* the log said "music goes over Bluetooth: the media channel stays closed". GM radios turn BT music off while
     projecting, and Dashline never called `CarAudio.request()` (Gearslip's CarUi did). Fix: `CarSettings.setPipeAudio(true)` and

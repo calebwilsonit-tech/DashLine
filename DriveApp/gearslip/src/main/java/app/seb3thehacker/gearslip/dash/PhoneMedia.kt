@@ -85,6 +85,7 @@ object PhoneMedia {
         val m = context.getSystemService(MediaSessionManager::class.java) ?: return
         val listener = ComponentName(context, GearslipNotificationListener::class.java)
         this.listener = listener
+        appContext = context.applicationContext
         try {
             m.addOnActiveSessionsChangedListener(sessionsChanged, listener, handler)
             manager = m
@@ -166,6 +167,56 @@ object PhoneMedia {
     }
 
     fun next() { controller?.transportControls?.skipToNext() }
+
+    fun play() { controller?.transportControls?.play() ?: mediaKey(android.view.KeyEvent.KEYCODE_MEDIA_PLAY) }
+
+    fun pause() { controller?.transportControls?.pause() }
+
+    private const val YT_MUSIC = "com.google.android.apps.youtube.music"
+    private var appContext: Context? = null
+
+    /**
+     * "Play Morgan Wallen": through YouTube Music's own session when it's running (no screen
+     * change on the phone), otherwise its play-from-search intent, launched from the garage
+     * accessibility service (allowed to start activities from the background).
+     */
+    fun playFromSearch(context: Context, query: String) {
+        val yt = runCatching { manager?.getActiveSessions(listener)?.firstOrNull { it.packageName == YT_MUSIC } }.getOrNull()
+        if (yt != null) {
+            if (query.isBlank()) yt.transportControls.play()
+            else yt.transportControls.playFromSearch(query, android.os.Bundle())
+            return
+        }
+        val intent = android.content.Intent(android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH)
+            .setPackage(YT_MUSIC)
+            .putExtra(android.app.SearchManager.QUERY, query)
+            .putExtra(android.provider.MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        val launcher: Context = Garage.service ?: context
+        runCatching { launcher.startActivity(intent) }
+            .onFailure { GearslipLog.w("dash media: couldn't start YouTube Music: ${it.message}") }
+    }
+
+    /**
+     * Music on when the truck connects: resume whatever was last playing. A paused session plays;
+     * with none, a PLAY media key wakes the last player (Android's media resumption).
+     */
+    fun autoPlay(context: Context) {
+        if (_now.value.playing) return
+        GearslipLog.i("dash media: auto-play on connect")
+        val c = controller
+        if (c != null) c.transportControls.play()
+        else {
+            appContext = context.applicationContext
+            mediaKey(android.view.KeyEvent.KEYCODE_MEDIA_PLAY)
+        }
+    }
+
+    private fun mediaKey(code: Int) {
+        val audio = appContext?.getSystemService(android.media.AudioManager::class.java) ?: return
+        audio.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, code))
+        audio.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, code))
+    }
 
     fun previous() { controller?.transportControls?.skipToPrevious() }
 

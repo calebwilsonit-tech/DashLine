@@ -125,6 +125,14 @@ object DashText {
         }
     }
 
+    /** "Text Sam I'm on my way": the message is known, so go straight to the read-back. */
+    fun startWith(to: DashContact, message: String) {
+        val id = ++run
+        main.removeCallbacksAndMessages(null)
+        _state.value = State(Phase.CONFIRMING, to, heard = message)
+        confirm(id, message)
+    }
+
     private fun listen(id: Int) {
         _state.value = _state.value.copy(phase = Phase.LISTENING, heard = "")
         CarAssistant.dictate(

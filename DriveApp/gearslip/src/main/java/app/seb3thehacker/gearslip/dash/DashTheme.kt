@@ -74,6 +74,14 @@ object DashPrefs {
     private const val FILE = "dashline"
     private const val KEY_THEME = "theme"
     private const val KEY_VIDEO = "video_mode"
+    private const val KEY_GEMINI = "gemini_key"
+    private const val KEY_MODEL = "gemini_model"
+    private const val KEY_AUTOPLAY = "autoplay"
+    const val DEFAULT_MODEL = "gemini-flash-latest"
+
+    private val _autoPlay = MutableStateFlow(true)
+    /** Start the phone's music when the truck connects. */
+    val autoPlay: StateFlow<Boolean> = _autoPlay.asStateFlow()
 
     private val _theme = MutableStateFlow(DashThemes.Carbon.id)
     val theme: StateFlow<String> = _theme.asStateFlow()
@@ -85,6 +93,7 @@ object DashPrefs {
         this.context = context.applicationContext
         _theme.value = prefs()?.getString(KEY_THEME, null) ?: DashThemes.Carbon.id
         VideoTuning.load(prefs()?.getString(KEY_VIDEO, null))
+        _autoPlay.value = prefs()?.getBoolean(KEY_AUTOPLAY, true) ?: true
     }
 
     fun setTheme(id: String) {
@@ -95,6 +104,25 @@ object DashPrefs {
     fun setVideoMode(mode: VideoTuning.Mode) {
         VideoTuning.set(mode)
         prefs()?.edit()?.putString(KEY_VIDEO, mode.name)?.apply()
+    }
+
+    fun setAutoPlay(on: Boolean) {
+        _autoPlay.value = on
+        prefs()?.edit()?.putBoolean(KEY_AUTOPLAY, on)?.apply()
+    }
+
+    /** The driver's own Google AI Studio key. Kept in this app's private storage only. */
+    fun geminiKey(context: Context): String =
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(KEY_GEMINI, "").orEmpty()
+
+    fun geminiModel(context: Context): String =
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(KEY_MODEL, null)?.takeIf { it.isNotBlank() } ?: DEFAULT_MODEL
+
+    fun saveGemini(context: Context, key: String, model: String) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit()
+            .putString(KEY_GEMINI, key.trim())
+            .putString(KEY_MODEL, model.trim())
+            .apply()
     }
 
     private fun prefs() = context?.getSharedPreferences(FILE, Context.MODE_PRIVATE)

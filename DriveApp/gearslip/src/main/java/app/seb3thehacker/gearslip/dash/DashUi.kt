@@ -62,6 +62,7 @@ import app.seb3thehacker.gearslip.car.CarUi
 import app.seb3thehacker.gearslip.notify.CarNotification
 import app.seb3thehacker.gearslip.notify.CarNotifications
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import java.text.DateFormat
 import java.util.Date
 
@@ -102,11 +103,27 @@ fun DashUi() {
             app.seb3thehacker.gearslip.car.CarAssistant.cancel()
             app.seb3thehacker.gearslip.audio.CarAudio.release()
             DashMessages.clearMutes()
+            DashAssistant.reset()
         }
     }
     // Ask for the phone's sound as soon as the car offers somewhere to play it. Gearslip's CarUi
     // did this; leaving it out is why the truck was silent.
     LaunchedEffect(Unit) { app.seb3thehacker.gearslip.audio.CarAudio.request() }
+    // Music on when the truck connects: once the car link is carrying sound (or after a few seconds).
+    LaunchedEffect(Unit) {
+        if (!DashPrefs.autoPlay.value) return@LaunchedEffect
+        kotlinx.coroutines.withTimeoutOrNull(8_000) {
+            app.seb3thehacker.gearslip.audio.CarAudio.capture.first { it == app.seb3thehacker.gearslip.audio.CarAudio.Capture.ON }
+        }
+        kotlinx.coroutines.delay(600)
+        PhoneMedia.autoPlay(context)
+    }
+    // The assistant: whatever CarAssistant heard (mic button or the steering-wheel voice key).
+    LaunchedEffect(Unit) {
+        app.seb3thehacker.gearslip.car.CarAssistant.pendingCommand.collect { heard ->
+            if (heard != null) app.seb3thehacker.gearslip.car.CarAssistant.reply(DashAssistant.handle(context, heard))
+        }
+    }
 
     val themeId by DashPrefs.theme.collectAsState()
     val theme = DashThemes.byId(themeId)
@@ -212,6 +229,14 @@ private fun Rail(current: DashScreen, onSelect: (DashScreen) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Clock(size = 15.sp)
+        // The assistant: ask anything, or "call Mom", "text Sam", "play Zach Bryan".
+        Tap(
+            onTap = { app.seb3thehacker.gearslip.car.CarAssistant.start() },
+            modifier = Modifier.size(56.dp, 48.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = t.accent,
+            pressedColor = t.accent2,
+        ) { GlyphIcon(Glyph.Mic, t.bgBottom, 26.dp) }
         for ((target, glyph) in railItems) {
             RailButton(glyph, selected = current == target) { onSelect(target) }
         }

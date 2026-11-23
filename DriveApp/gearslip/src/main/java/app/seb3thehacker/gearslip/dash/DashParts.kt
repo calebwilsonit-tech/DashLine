@@ -123,7 +123,7 @@ fun Label(
  * Icons drawn as plain shapes: no image loading, tinted by the theme, sharp at any size, and
  * free of the large extended-icons library.
  */
-enum class Glyph { Play, Pause, Next, Prev, Home, Map, Music, Phone, Message, Garage, Settings, Back }
+enum class Glyph { Play, Pause, Next, Prev, Home, Map, Music, Phone, Message, Garage, Settings, Back, Mic }
 
 @Composable
 fun GlyphIcon(glyph: Glyph, color: Color, size: Dp = 28.dp, modifier: Modifier = Modifier) {
@@ -202,6 +202,13 @@ fun GlyphIcon(glyph: Glyph, color: Color, size: Dp = 28.dp, modifier: Modifier =
                     drawLine(color, inner, outer, stroke.width * 1.4f, StrokeCap.Round)
                 }
                 drawCircle(color, radius = w * 0.1f)
+            }
+            Glyph.Mic -> {
+                drawRoundRect(color, Offset(w * 0.36f, h * 0.1f), Size(w * 0.28f, h * 0.48f),
+                    androidx.compose.ui.geometry.CornerRadius(w * 0.14f))
+                drawArc(color, 0f, 180f, false, Offset(w * 0.24f, h * 0.3f), Size(w * 0.52f, h * 0.44f), style = stroke)
+                drawLine(color, Offset(w * 0.5f, h * 0.74f), Offset(w * 0.5f, h * 0.88f), stroke.width)
+                drawLine(color, Offset(w * 0.36f, h * 0.88f), Offset(w * 0.64f, h * 0.88f), stroke.width)
             }
             Glyph.Back -> drawPath(Path().apply {
                 moveTo(w * 0.62f, h * 0.18f); lineTo(w * 0.3f, h * 0.5f); lineTo(w * 0.62f, h * 0.82f)

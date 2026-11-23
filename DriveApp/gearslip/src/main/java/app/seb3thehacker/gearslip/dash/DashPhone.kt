@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.seb3thehacker.gearslip.car.VoiceReply
+import app.seb3thehacker.gearslip.car.CarAssistant.Phase as A
 import app.seb3thehacker.gearslip.car.placeCall
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -141,17 +142,34 @@ internal fun VoiceOverlay(modifier: Modifier) {
     val t = LocalDashTheme.current
     val reply by VoiceReply.state.collectAsState()
     val text by DashText.state.collectAsState()
+    val assistant by app.seb3thehacker.gearslip.car.CarAssistant.state.collectAsState()
 
     val replying = reply.phase != VoiceReply.Phase.IDLE
     val texting = text.phase != DashText.Phase.IDLE
-    if (!replying && !texting) return
+    val asking = assistant.phase != app.seb3thehacker.gearslip.car.CarAssistant.Phase.IDLE
+    if (!replying && !texting && !asking) return
 
     val title: String
     val body: String
     val canSend: Boolean
     val onCancel: () -> Unit
     val onSend: () -> Unit
-    if (texting) {
+    if (asking && !texting && !replying) {
+        title = when (assistant.phase) {
+            A.LISTENING -> if (assistant.ready) "Listening…" else "One moment…"
+            A.THINKING -> "Thinking…"
+            A.SPEAKING -> assistant.heard.ifBlank { "Dashline" }
+            A.ERROR -> "Assistant"
+            A.IDLE -> ""
+        }
+        body = when (assistant.phase) {
+            A.SPEAKING, A.ERROR -> assistant.reply
+            else -> assistant.heard
+        }
+        canSend = false
+        onCancel = app.seb3thehacker.gearslip.car.CarAssistant::cancel
+        onSend = {}
+    } else if (texting) {
         val who = text.to?.name.orEmpty()
         title = when (text.phase) {
             DashText.Phase.ASKING -> "Text to $who"
@@ -195,7 +213,7 @@ internal fun VoiceOverlay(modifier: Modifier) {
             Column(Modifier.weight(1f)) {
                 Label(title, 16.sp, t.accent, FontWeight.SemiBold)
                 Spacer(Modifier.height(4.dp))
-                Label(body.ifEmpty { " " }, 18.sp, maxLines = 2)
+                Label(body.ifEmpty { " " }, 18.sp, maxLines = 3)
             }
             Spacer(Modifier.width(10.dp))
             if (canSend) {

@@ -17,6 +17,7 @@ import app.seb3thehacker.gearslip.car.CarSettings
 import app.seb3thehacker.gearslip.car.CarUi
 import java.io.File
 import java.io.FileOutputStream
+import kotlinx.coroutines.launch
 
 /**
  * Debug-only harness: runs the real car UI on a virtual display (the same path a head unit
@@ -121,6 +122,16 @@ class CarPreviewActivity : ComponentActivity() {
             }
             app.seb3thehacker.gearslip.dash.VideoTuning.set(before)
         }.start()
+
+        // Dashline assistant without speaking: --es ask "call sam" logs what it would answer.
+        intent.getStringExtra("ask")?.let { q ->
+            kotlinx.coroutines.MainScope().launch {
+                kotlinx.coroutines.delay(2500)
+                val said = app.seb3thehacker.gearslip.dash.DashAssistant.handle(this@CarPreviewActivity, q)
+                GearslipLog.i("ask: \"$q\" -> \"$said\"")
+                app.seb3thehacker.gearslip.car.CarAssistant.reply(said)
+            }
+        }
 
         // Dashline garage, without holding a button: --es garage dry|press (fires after 3 s).
         intent.getStringExtra("garage")?.let { mode ->

@@ -347,6 +347,18 @@
                 android:resource="@xml/dash_garage_service" />
         </service>
 
+        <!-- Dashline: phone-side settings (Gemini key, auto-play), with its own launcher icon. -->
+        <activity
+            android:name=".dash.DashSettingsActivity"
+            android:exported="true"
+            android:label="Dashline settings"
+            android:taskAffinity="app.dashline.settings">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Dashline: turns the phone's screen on and past a trusted-device lock screen so myQ
              can be opened while the phone sits dark in a pocket or mount. -->
         <activity
