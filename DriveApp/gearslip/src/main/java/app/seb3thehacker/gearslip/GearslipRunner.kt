@@ -128,6 +128,18 @@ class GearslipRunner(
     @Volatile private var resyncAttempts = 0
     @Volatile private var lastKeyframeSentAt = 0L
 
+    /**
+     * Dashline keep-alive. The 2017 GMC IntelliLink resets the USB link (read EIO) about 3 s after
+     * the video goes quiet: seen every time the driver came back from the car's own screen, when the
+     * encoder sent one frame and then nothing because nothing on screen changed. In all-keyframe
+     * mode any frame stands alone, so the last one is resent whenever none has gone out for
+     * [KEEPALIVE_GAP_MS]: the car never sees a gap, and gets a picture the moment it hands back.
+     */
+    @Volatile private var lastKeyFrameData: ByteArray? = null
+    @Volatile private var lastFrameSentAt = 0L
+    private val frameSendLock = Any()
+    private var keepAlive: Thread? = null
+
     fun run() {
         // This thread reads the car's acks; audio waits on them, so it can't be left at the back.
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
@@ -1202,6 +1214,7 @@ class GearslipRunner(
 
     private fun startVideoSource() {
         lastKeyframeSentAt = System.currentTimeMillis() // frame #1 is always a keyframe
+        startKeepAlive()
         val index = selectedConfigIndex ?: 0
         val config = videoConfigs.getOrNull(index)
         if (config == null) {
@@ -1294,9 +1307,14 @@ class GearslipRunner(
      * minute on LIVI, at 5-12 fps). Waiting here holds the encoder back instead, which simply
      * makes it produce fewer frames, each one whole.
      */
-    private fun sendVideoFrame(data: ByteArray, presentationTimeUs: Long, keyFrame: Boolean) {
+    private fun sendVideoFrame(data: ByteArray, presentationTimeUs: Long, keyFrame: Boolean) =
+        synchronized(frameSendLock) { sendVideoFrameLocked(data, presentationTimeUs, keyFrame) }
+
+    private fun sendVideoFrameLocked(data: ByteArray, presentationTimeUs: Long, keyFrame: Boolean) {
+        if (keyFrame) lastKeyFrameData = data
         // The car is showing its own screen and would throw these away.
         if (!videoProjected) return
+        lastFrameSentAt = System.currentTimeMillis()
         synchronized(ackLock) {
             val waitStart = System.currentTimeMillis()
             while (running && inFlight >= maxUnacked) {
@@ -1341,6 +1359,36 @@ class GearslipRunner(
         }
     }
 
+    private fun startKeepAlive() {
+        if (keepAlive != null) return
+        keepAlive = Thread({
+            while (running) {
+                try {
+                    Thread.sleep(KEEPALIVE_TICK_MS)
+                } catch (e: InterruptedException) {
+                    return@Thread
+                }
+                if (!videoProjected || !videoStarted) continue
+                if (app.seb3thehacker.gearslip.dash.VideoTuning.mode.value !=
+                    app.seb3thehacker.gearslip.dash.VideoTuning.Mode.ALL_KEYFRAMES
+                ) continue
+                if (System.currentTimeMillis() - lastFrameSentAt > KEEPALIVE_GAP_MS) resendLastKeyFrame(null)
+            }
+        }, "dash-video-keepalive").apply { isDaemon = true; start() }
+    }
+
+    private fun resendLastKeyFrame(why: String?) {
+        val data = lastKeyFrameData ?: return
+        keepAliveSent++
+        if (why != null || keepAliveSent == 1 || keepAliveSent % 300 == 0) {
+            log.i("keep-alive: resending the last keyframe (${why ?: "video idle"}, $keepAliveSent so far)")
+        }
+        runCatching { sendVideoFrame(data, System.nanoTime() / 1000, true) }
+            .onFailure { log.w("keep-alive send failed: ${it.message}") }
+    }
+
+    @Volatile private var keepAliveSent = 0
+
     /** Whether the car is showing Gearslip; false while it shows its own interface. */
     @Volatile private var videoProjected = true
     /** The encoder's SPS/PPS, resent when the car hands its screen back. */
@@ -1379,6 +1427,8 @@ class GearslipRunner(
             log.i("-> Start(session_id=$SESSION_ID)")
             lastCodecConfig?.let { send(MSG_MEDIA_CODEC_CONFIG, it, encrypted = true, channel = videoChannelId) }
             videoSource?.requestSyncFrame()
+            // Dashline: a picture straight away, before the encoder has anything new.
+            resendLastKeyFrame("screen handed back")
         } else {
             // A phone ends the stream when the car takes its screen. LIVI switches on the focus
             // answer alone, but the 2018 Uconnect kept showing our last frame until it got Stop.
@@ -1758,6 +1808,8 @@ class GearslipRunner(
         const val VIDEO_FOCUS_REASON_LAUNCH_NATIVE = 2
         const val SESSION_ID = 1
         const val MSG_INPUT_REPORT = 32769
+        const val KEEPALIVE_TICK_MS = 100L
+        const val KEEPALIVE_GAP_MS = 200L
         const val MSG_KEY_BINDING_REQUEST = 32770
         const val MSG_KEY_BINDING_RESPONSE = 32771
         const val ACTION_DOWN = 0

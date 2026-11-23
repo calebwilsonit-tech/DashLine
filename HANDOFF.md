@@ -78,6 +78,20 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **Full-drive log (`Gearslip log-3.txt`, keyframe build).** Three sessions, 393 s / 197 s / ~230 s.
+  - All-keyframes confirmed in the field: `key=` equaled `sent` all drive, frames ~31–36 KB, ~10 fps on a still screen, acks immediate,
+    phone-side touch→frame median 47 ms (p90 82, max 134).
+  - **Every session ended the same way:** the car took its screen (VideoFocus mode=2, e.g. a radio button), the driver came back (mode=1),
+    Gearslip sent Start + 1 frame (or none), the encoder produced nothing more (still screen), and **~2.5–3 s later the HU reset USB (EIO)**.
+    Fix: **video keep-alive** in `GearslipRunner` (`startKeepAlive`/`resendLastKeyFrame`). In ALL_KEYFRAMES mode it resends the last keyframe
+    whenever nothing has gone out for 200 ms, and immediately on hand-back. **Untested on the truck.**
+  - Garage: the first press worked (1.7 s). Later presses said "Phone is locked" although the truck is a trusted device. Cause: the old build's
+    `GLOBAL_ACTION_LOCK_SCREEN` after a press counts as a manual lock, which pauses Extend Unlock. Removed. Plus a new fallback:
+    `Garage.lockedOut` waits up to 30 s for `ACTION_USER_PRESENT` ("Unlock your phone to finish") and then carries on.
+  - Audio was still Bluetooth in this drive: the audio-fix build wasn't installed yet. It is now.
+  - Phone assistant: `GarageWakeActivity` no longer waits on keyguard dismissal for the assistant (it hung waiting for a fingerprint).
+    Verified that the assistant window (`googlequicksearchbox/...voice.robin.main.MainActivity`) opens from the radio mic. Bar text capture with
+    real speech is **not verified yet**; Gemini closes itself after a few seconds of silence.
 - 2026-11-23: **Owner prefers the phone's own Google Assistant/Gemini** (the power-button one) with a bar on the radio.
   `dash/PhoneAssistant.kt`: the mic button and the steering-wheel voice key (`CarKeys.voice`) call `GarageWakeActivity` (FOR_ASSISTANT: screen on,
   try keyguard dismiss) and then `ACTION_VOICE_COMMAND` (falling back to `ACTION_ASSIST`), started through the helper accessibility service.

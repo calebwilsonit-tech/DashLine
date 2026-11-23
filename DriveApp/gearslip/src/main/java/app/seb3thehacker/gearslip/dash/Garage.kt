@@ -113,20 +113,55 @@ object Garage {
     }
 
     /** Called by [GarageWakeActivity] once the lock screen is out of the way (or isn't there). */
-    internal fun unlocked(activity: Activity) {
+    internal fun unlocked(context: Context) {
         if (_state.value.phase != Phase.WAKING) return
-        val launch = activity.packageManager.getLaunchIntentForPackage(MYQ)
+        stopWaitingForUnlock()
+        val launch = context.packageManager.getLaunchIntentForPackage(MYQ)
         if (launch == null) {
             fail("The myQ app isn't installed on the phone")
             return
         }
         update(Phase.OPENING_MYQ, "Opening myQ…")
-        activity.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        // From the accessibility service when there is one: it may start activities from the background.
+        val launcher: Context = service ?: context
+        launcher.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         main.post(::poll)
     }
 
-    internal fun lockedOut() {
-        fail("Phone is locked. Set the truck as a trusted device (Settings → Security → Extend Unlock).")
+    /**
+     * The phone is properly locked (Extend Unlock paused, or not near the truck). Instead of
+     * failing, wait for the driver to unlock it (the lock screen is already lit) and carry on.
+     */
+    internal fun lockedOut(context: Context) {
+        if (_state.value.phase != Phase.WAKING) return
+        GearslipLog.i("garage: phone locked - waiting up to ${UNLOCK_WAIT_MS / 1000}s for an unlock")
+        update(Phase.WAKING, "Unlock your phone to finish")
+        val app = context.applicationContext
+        stopWaitingForUnlock()
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(c: Context?, intent: Intent?) {
+                GearslipLog.i("garage: phone unlocked - carrying on")
+                unlocked(app)
+            }
+        }
+        unlockReceiver = receiver
+        unlockContext = app
+        app.registerReceiver(receiver, android.content.IntentFilter(Intent.ACTION_USER_PRESENT))
+        main.postDelayed(unlockTimeout, UNLOCK_WAIT_MS)
+    }
+
+    private var unlockReceiver: android.content.BroadcastReceiver? = null
+    private var unlockContext: Context? = null
+    private val unlockTimeout = Runnable {
+        stopWaitingForUnlock()
+        if (_state.value.phase == Phase.WAKING) fail("Phone stayed locked, so the door wasn't touched")
+    }
+    private const val UNLOCK_WAIT_MS = 30_000L
+
+    private fun stopWaitingForUnlock() {
+        main.removeCallbacks(unlockTimeout)
+        unlockReceiver?.let { r -> runCatching { unlockContext?.unregisterReceiver(r) } }
+        unlockReceiver = null
     }
 
     private fun poll() {
@@ -242,9 +277,9 @@ object Garage {
     private fun goBack() {
         val svc = service ?: return
         svc.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
-        if (wasDark) {
-            main.postDelayed({ service?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN) }, 400)
-        }
+        // No LOCK_SCREEN here any more: on the truck, the second press of a drive found the phone
+        // locked. An app-triggered lock counts as a manual lock and pauses Extend Unlock until the
+        // next unlock. The screen now just times out on its own.
     }
 
     private fun update(phase: Phase, message: String) {
@@ -306,18 +341,11 @@ class GarageWakeActivity : Activity() {
         super.onCreate(savedInstanceState)
         val keyguard = getSystemService(KeyguardManager::class.java)
         if (intent.getStringExtra(EXTRA_FOR) == FOR_ASSISTANT) {
-            // The assistant runs over the lock screen too: try to unlock (trusted device), and
-            // start it whatever the answer.
-            if (keyguard == null || !keyguard.isKeyguardLocked) {
-                PhoneAssistant.screenReady(this)
-                finish()
-                return
-            }
-            keyguard.requestDismissKeyguard(this, object : KeyguardManager.KeyguardDismissCallback() {
-                override fun onDismissSucceeded() { PhoneAssistant.screenReady(this@GarageWakeActivity); finish() }
-                override fun onDismissCancelled() { PhoneAssistant.screenReady(this@GarageWakeActivity); finish() }
-                override fun onDismissError() { PhoneAssistant.screenReady(this@GarageWakeActivity); finish() }
-            })
+            // The assistant runs over the lock screen, so don't wait on an unlock (on a phone that
+            // isn't trusted-unlocked that waits for a fingerprint that never comes). This activity
+            // has only turned the screen on.
+            PhoneAssistant.screenReady(this)
+            finish()
             return
         }
         if (keyguard == null || !keyguard.isKeyguardLocked) {
@@ -332,12 +360,12 @@ class GarageWakeActivity : Activity() {
             }
 
             override fun onDismissCancelled() {
-                Garage.lockedOut()
+                Garage.lockedOut(this@GarageWakeActivity)
                 finish()
             }
 
             override fun onDismissError() {
-                Garage.lockedOut()
+                Garage.lockedOut(this@GarageWakeActivity)
                 finish()
             }
         })
