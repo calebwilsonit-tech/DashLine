@@ -520,7 +520,7 @@ class GearslipRunner(
         val icons = if (plainDiscovery) emptyList() else runCatching(phoneIcons).getOrDefault(emptyList())
         var body = ByteArray(0)
         icons.take(3).forEachIndexed { i, png -> body += Protobuf.bytesField(i + 1, png) } // small, medium, large icon
-        body += Protobuf.stringField(4, "Gearslip") + // label_text
+        body += Protobuf.stringField(4, "Dashline") + // label_text
             Protobuf.stringField(5, Build.MODEL) // device_name
         if (!plainDiscovery) body += Protobuf.bytesField(6, Protobuf.stringField(1, java.util.UUID.randomUUID().toString())) // session ID
         send(MSG_SERVICE_DISCOVERY_REQUEST, body, encrypted = true)
@@ -658,7 +658,7 @@ class GearslipRunner(
         // A car known to switch Bluetooth music off gets it through Gearslip, whatever the setting.
         CarSettings.carConnected(ServiceDiscovery.findBluetoothService(serviceDiscoveryResponse)?.carAddress)
         if (CarSettings.pipesNow) {
-            if (!CarSettings.pipeAudio.value) log.i("this car turns Bluetooth music off, so music goes through Gearslip")
+            if (!CarSettings.pipeAudio.value) log.i("this car turns Bluetooth music off, so music goes through Dashline")
             openChannel(media.serviceId)
         } else {
             // Many cars switch their source to Android Auto the moment this channel opens, which
@@ -1531,7 +1531,7 @@ class GearslipRunner(
                     send(MSG_PING_REQUEST, Protobuf.varintField(1, System.nanoTime() / 1_000), encrypted = true)
                 }.onFailure { return@Thread }
                 pingsSent++
-                if (pingsSent == 1) log.i("-> PingRequest (Gearslip pings the car once a second)")
+                if (pingsSent == 1) log.i("-> PingRequest (Dashline pings the car once a second)")
                 try {
                     Thread.sleep(PHONE_PING_MS)
                 } catch (e: InterruptedException) {
@@ -1607,7 +1607,7 @@ class GearslipRunner(
             State.DONE -> SessionStatus.disconnected()
             State.WAIT_VERSION -> SessionStatus.failed(
                 "Head unit never started talking",
-                "The connection opened but the head unit sent nothing. Check the phone is set to use Gearslip for this USB accessory.",
+                "The connection opened but the head unit sent nothing. Check the phone is set to use Dashline for this USB accessory.",
             )
             State.TLS_HANDSHAKE, State.WAIT_AUTH -> SessionStatus.failed(
                 "Connection dropped during setup",

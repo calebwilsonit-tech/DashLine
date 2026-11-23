@@ -223,7 +223,7 @@ object WirelessLink {
             log.e("Bluetooth: permission refused while opening the channel on $name", e)
             SessionStatus.failed(
                 "Bluetooth permission missing",
-                "Gearslip needs the Nearby devices permission to reach $name. Allow it in the app's " +
+                "Dashline needs the Nearby devices permission to reach $name. Allow it in the app's " +
                     "settings, then try again.",
             )
             return false
@@ -469,7 +469,7 @@ object WirelessLink {
             // Android can hold an app's traffic back on a network it has joined (battery or data
             // limits, local-network rules); the packets are then dropped without an error.
             override fun onBlockedStatusChanged(net: Network, blocked: Boolean) {
-                log.i("Wi-Fi: Android ${if (blocked) "BLOCKS" else "allows"} Gearslip's traffic on \"$ssid\"")
+                log.i("Wi-Fi: Android ${if (blocked) "BLOCKS" else "allows"} Dashline's traffic on \"$ssid\"")
             }
 
             private var capsLogged = false
@@ -596,7 +596,7 @@ object WirelessLink {
                 log.w("TCP: try ${attempt + 1} to $ip:$port failed: ${e.message}")
                 if (!bindRefused && e.message?.contains("EPERM") == true) {
                     bindRefused = true
-                    log.i("TCP: Android won't let Gearslip use the car's network directly; trying the phone's ordinary route")
+                    log.i("TCP: Android won't let Dashline use the car's network directly; trying the phone's ordinary route")
                 }
                 if (attempt == 0) probe(context, net, ip, port)
                 Thread.sleep(1_000)
@@ -606,8 +606,8 @@ object WirelessLink {
         if (vpnActive(context)) {
             SessionStatus.failed(
                 "A VPN is blocking the car",
-                "Gearslip joined $name's network, but a VPN on this phone won't let it reach the car. " +
-                    "Turn the VPN off, or exclude Gearslip in its settings, then try again.",
+                "Dashline joined $name's network, but a VPN on this phone won't let it reach the car. " +
+                    "Turn the VPN off, or exclude Dashline in its settings, then try again.",
             )
             noRetry = true
             endTry()
@@ -615,7 +615,7 @@ object WirelessLink {
         }
         SessionStatus.failed(
             "Car's Wi-Fi joined, but no connection",
-            "Gearslip joined $name's network but couldn't reach Android Auto at $ip:$port.",
+            "Dashline joined $name's network but couldn't reach Android Auto at $ip:$port.",
         )
         endTry()
     }

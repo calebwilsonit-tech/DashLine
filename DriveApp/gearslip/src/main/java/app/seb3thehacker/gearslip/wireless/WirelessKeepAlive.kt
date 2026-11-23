@@ -27,7 +27,7 @@ class WirelessKeepAlive : Service() {
         )
         val notification = Notification.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
-            .setContentTitle("Gearslip is connected to the car wirelessly")
+            .setContentTitle("Dashline is connected to the car wirelessly")
             .setOngoing(true)
             .build()
         // Refused if Android thinks Gearslip may not start one now; the start-up carries on

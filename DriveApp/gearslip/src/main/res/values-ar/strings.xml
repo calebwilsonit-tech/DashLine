@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="touch_relay_description">يتيح لـ Gearslip نقل اللمسات من شاشة السيارة إلى الهاتف أثناء مشاركة الشاشة. لا يقرأ Gearslip محتوى الشاشة.</string>
+    <string name="touch_relay_description">يتيح لـ Dashline نقل اللمسات من شاشة السيارة إلى الهاتف أثناء مشاركة الشاشة. لا يقرأ Dashline محتوى الشاشة.</string>
 
     <!-- Setup guide -->
     <string name="guide_usage_title">ساعد السائقين الآخرين.</string>
     <string name="guide_safety_title">قُد بأمان.</string>
-    <string name="guide_safety_body">Gearslip تطبيق غير رسمي. لم تصنعه أي شركة سيارات ولم تراجعه، وقد يتوقف عن العمل دون سابق إنذار. اضبطه قبل أن تنطلق، ثم أبقِ عينيك على الطريق.</string>
+    <string name="guide_safety_body">Dashline تطبيق غير رسمي. لم تصنعه أي شركة سيارات ولم تراجعه، وقد يتوقف عن العمل دون سابق إنذار. اضبطه قبل أن تنطلق، ثم أبقِ عينيك على الطريق.</string>
     <string name="guide_mic_title">الميكروفون.</string>
-    <string name="guide_mic_body">يستخدمه Gearslip لإرسال موسيقاك إلى السيارة ولسماعك عندما تطلب شيئًا أو ترد على رسالة. ما تقوله يبقى على الهاتف.</string>
+    <string name="guide_mic_body">يستخدمه Dashline لإرسال موسيقاك إلى السيارة ولسماعك عندما تطلب شيئًا أو ترد على رسالة. ما تقوله يبقى على الهاتف.</string>
     <string name="guide_location_title">الموقع.</string>
     <string name="guide_location_body">تحتاجه خريطة السيارة والبحث عن الأماكن القريبة. من دونه لا تظهر خريطة في لوحة المعلومات.</string>
     <string name="guide_calendar_title">التقويم.</string>
-    <string name="guide_calendar_body">تعرض شاشة السيارة موعدك التالي. يقرأ Gearslip تقويمك فقط.</string>
+    <string name="guide_calendar_body">تعرض شاشة السيارة موعدك التالي. يقرأ Dashline تقويمك فقط.</string>
     <string name="guide_calls_title">المكالمات وجهات الاتصال.</string>
-    <string name="guide_calls_body">تعرض السيارة اسم المتصل، ويمكن لتطبيق الهاتف فيها طلب رقم أو الاتصال بإحدى جهات اتصالك. يقرأها Gearslip فقط.</string>
+    <string name="guide_calls_body">تعرض السيارة اسم المتصل، ويمكن لتطبيق الهاتف فيها طلب رقم أو الاتصال بإحدى جهات اتصالك. يقرأها Dashline فقط.</string>
     <string name="guide_bluetooth_title">البلوتوث.</string>
-    <string name="guide_bluetooth_body">في أول مرة توصل فيها الهاتف، يعرض Gearslip إقرانه بالسيارة لتُسمع المكالمات عبر مكبرات صوتها.</string>
+    <string name="guide_bluetooth_body">في أول مرة توصل فيها الهاتف، يعرض Dashline إقرانه بالسيارة لتُسمع المكالمات عبر مكبرات صوتها.</string>
     <string name="guide_notifications_title">الإشعارات.</string>
-    <string name="guide_notifications_body">أثناء اتصال Gearslip يعرض إشعارًا فيه زر للإيقاف. من دون هذا الإذن يخفيه Android.</string>
+    <string name="guide_notifications_body">أثناء اتصال Dashline يعرض إشعارًا فيه زر للإيقاف. من دون هذا الإذن يخفيه Android.</string>
     <string name="guide_messages_title">الرسائل.</string>
-    <string name="guide_messages_body">تعرض السيارة رسائلك وتقرؤها بصوت عالٍ وتتيح لك الرد. فعّل Gearslip في القائمة التي ستفتح.</string>
+    <string name="guide_messages_body">تعرض السيارة رسائلك وتقرؤها بصوت عالٍ وتتيح لك الرد. فعّل Dashline في القائمة التي ستفتح.</string>
     <string name="guide_android_auto_title">أوقف Android Auto.</string>
-    <string name="guide_android_auto_body">لا يزال Android Auto مثبتًا، وهو ينازع Gearslip على اتصال USB بالسيارة. عطّله أو أزل تثبيته في الشاشة التي ستفتح.</string>
-    <string name="guide_default_title">اختر Gearslip.</string>
-    <string name="guide_default_body">إذا سألك الهاتف عن التطبيق الذي يُفتح عند توصيله بالسيارة، فاختر Gearslip ثم انقر على «دائمًا».</string>
+    <string name="guide_android_auto_body">لا يزال Android Auto مثبتًا، وهو ينازع Dashline على اتصال USB بالسيارة. عطّله أو أزل تثبيته في الشاشة التي ستفتح.</string>
+    <string name="guide_default_title">اختر Dashline.</string>
+    <string name="guide_default_body">إذا سألك الهاتف عن التطبيق الذي يُفتح عند توصيله بالسيارة، فاختر Dashline ثم انقر على «دائمًا».</string>
     <string name="guide_audio_title">صوت السيارة.</string>
     <string name="guide_audio_body">اختر كيف تصل الموسيقى إلى السيارة. المكالمات تمر عبر البلوتوث في كلتا الحالتين.</string>
     <string name="guide_voice_title">الصوت.</string>
     <string name="guide_voice_body">اطلب الاتجاهات أو الموسيقى أو مكالمة بصوتك. يحوّل هاتفك الكلام إلى نص بنفسه، ولا يخرج منه شيء مما تقوله. يحتاج إلى %1$d ميغابايت تُنزَّل مرة واحدة. استخدم Wi-Fi إن أمكن.</string>
     <string name="guide_audio_prompt_title">من دون سؤال عن الصوت.</string>
-    <string name="guide_audio_prompt_body">شغّل هذا من حاسوب مفعّل فيه تصحيح أخطاء USB، فيأتمن Android تطبيق Gearslip على صوتك نهائيًا. من دونه تنقر على «ابدأ» مرة في كل رحلة.</string>
+    <string name="guide_audio_prompt_body">شغّل هذا من حاسوب مفعّل فيه تصحيح أخطاء USB، فيأتمن Android تطبيق Dashline على صوتك نهائيًا. من دونه تنقر على «ابدأ» مرة في كل رحلة.</string>
     <string name="guide_readable_title">إشعارات مقروءة.</string>
-    <string name="guide_readable_body">أثناء إرسال الصوت إلى السيارة يخفي Android محتوى الإشعارات كما لو كنت تشارك شاشتك. يتيح هذا لـ Gearslip عرضها أثناء الرحلة ثم إخفاءها مجددًا بعدها.</string>
+    <string name="guide_readable_body">أثناء إرسال الصوت إلى السيارة يخفي Android محتوى الإشعارات كما لو كنت تشارك شاشتك. يتيح هذا لـ Dashline عرضها أثناء الرحلة ثم إخفاءها مجددًا بعدها.</string>
     <string name="guide_answer_title">الرد على المكالمات.</string>
-    <string name="guide_answer_body">اجعل Gearslip تطبيق معرّف المتصل، فتستطيع السيارة الرد على المكالمات ورفضها. من دون ذلك يرن الهاتف، لكن لا يمكن الرد إلا منه.</string>
+    <string name="guide_answer_body">اجعل Dashline تطبيق معرّف المتصل، فتستطيع السيارة الرد على المكالمات ورفضها. من دون ذلك يرن الهاتف، لكن لا يمكن الرد إلا منه.</string>
     <string name="guide_apps_title">رفقة طيبة.</string>
     <string name="guide_buttons_title">أزرارك.</string>
     <string name="guide_buttons_body">اختر شكل الأزرار في السيارة. يمكنك تغييره في أي وقت من إعدادات السيارة.</string>
@@ -47,8 +47,8 @@
     <string name="guide_audio_bluetooth">بلوتوث</string>
     <string name="guide_recommended">موصى به</string>
     <string name="guide_audio_bluetooth_body">لا سؤال في كل رحلة، ويصل صوت تطبيق الخرائط إلى السيارة.</string>
-    <string name="guide_audio_usb">عبر Gearslip</string>
-    <string name="guide_audio_usb_body">صوت أنقى بلا تأخير. في كل رحلة يطلب Android منك مشاركة الشاشة، وهذا ما يتيح لـ Gearslip إرسال الصوت.</string>
+    <string name="guide_audio_usb">عبر Dashline</string>
+    <string name="guide_audio_usb_body">صوت أنقى بلا تأخير. في كل رحلة يطلب Android منك مشاركة الشاشة، وهذا ما يتيح لـ Dashline إرسال الصوت.</string>
     <string name="guide_optional">اختياري</string>
     <string name="guide_already_allowed">مسموح به بالفعل.</string>
     <string name="guide_scroll_more">مرّر لعرض المزيد  ↓</string>
@@ -60,7 +60,7 @@
     <string name="guide_back">رجوع</string>
 
     <!-- Usage notes -->
-    <string name="usage_intro">فعّل هذا، فيرسل Gearslip ملاحظة قصيرة عند فتحه وبعد كل رحلة. &lt;b&gt;لا تتضمن الملاحظة اسمًا أو حسابًا أو موقعًا. يُحتسب هاتفك مرة واحدة برقم عشوائي، ولا يحتفظ الخادم بأي عنوان IP.&lt;/b&gt; تبيّن الملاحظات السيارات التي يعمل فيها، وأين يتعثر في غيرها.</string>
+    <string name="usage_intro">فعّل هذا، فيرسل Dashline ملاحظة قصيرة عند فتحه وبعد كل رحلة. &lt;b&gt;لا تتضمن الملاحظة اسمًا أو حسابًا أو موقعًا. يُحتسب هاتفك مرة واحدة برقم عشوائي، ولا يحتفظ الخادم بأي عنوان IP.&lt;/b&gt; تبيّن الملاحظات السيارات التي يعمل فيها، وأين يتعثر في غيرها.</string>
     <string name="usage_send">إرسال ملاحظات الاستخدام</string>
     <string name="usage_also_share">مشاركة أيضًا</string>
     <string name="usage_share_android">إصدار Android والنظام</string>
@@ -74,14 +74,14 @@
     <string name="usage_example">مثال، لا يُرسل: رحلة واحدة تضيف هذا إلى «sessions»</string>
     <string name="usage_no_server">لا يحتوي هذا الإصدار على خادم إحصاءات، لذلك لا يرسل شيئًا</string>
     <string name="usage_debug_build">إصدار تصحيح: تُحفظ الملاحظات منفصلة ولا تُحتسب أبدًا في الإحصاءات</string>
-    <string name="worked_title">عمل Gearslip مع سيارتك %1$s</string>
-    <string name="worked_title_unknown">عمل Gearslip مع سيارتك</string>
+    <string name="worked_title">عمل Dashline مع سيارتك %1$s</string>
+    <string name="worked_title_unknown">عمل Dashline مع سيارتك</string>
     <string name="worked_body">هل تشارك ذلك ليعرف السائق التالي أنه يعمل؟ من دون اسم أو حساب أو موقع.</string>
     <string name="worked_not_now">ليس الآن</string>
     <string name="worked_share">مشاركة</string>
 
     <!-- Recommended apps -->
-    <string name="recommended_intro">تعمل هذه التطبيقات المجانية على شاشة السيارة في Gearslip. يفتح كل زر صفحة التطبيق على GitHub.</string>
+    <string name="recommended_intro">تعمل هذه التطبيقات المجانية على شاشة السيارة في Dashline. يفتح كل زر صفحة التطبيق على GitHub.</string>
     <string name="recommended_title">تطبيقات موصى بها</string>
     <string name="back">رجوع</string>
     <string name="recommended_installed">مثبّت</string>
@@ -99,16 +99,16 @@
     <string name="settings_title">الإعدادات</string>
     <string name="settings_whats_new">الجديد</string>
     <string name="settings_whats_new_sub">اقرأ ملاحظات إصدار %1$s على GitHub</string>
-    <string name="settings_support">ادعم Gearslip</string>
-    <string name="settings_support_footer">Gearslip مجاني، بلا إعلانات ولا تتبع. دعمك يبقيه مستمرًا.</string>
+    <string name="settings_support">ادعم Dashline</string>
+    <string name="settings_support_footer">Dashline مجاني، بلا إعلانات ولا تتبع. دعمك يبقيه مستمرًا.</string>
     <string name="settings_usage_notes">ملاحظات الاستخدام</string>
     <string name="settings_updates">التحديثات</string>
     <string name="settings_about">حول</string>
     <string name="settings_replay">إعادة دليل الإعداد</string>
     <string name="settings_replay_sub">المرور بخطوات التشغيل الأول مجددًا</string>
     <string name="settings_connection">الاتصال</string>
-    <string name="settings_use_in_car">استخدام Gearslip في السيارة</string>
-    <string name="settings_use_in_car_on">يستجيب Gearslip عندما توصل الهاتف بسيارة</string>
+    <string name="settings_use_in_car">استخدام Dashline في السيارة</string>
+    <string name="settings_use_in_car_on">يستجيب Dashline عندما توصل الهاتف بسيارة</string>
     <string name="settings_use_in_car_off">متوقف: يمكن لـ Android Auto أخذ الاتصال بدلًا منه</string>
     <string name="settings_apps">التطبيقات</string>
     <string name="settings_certificate">الشهادة</string>
@@ -172,7 +172,7 @@
     <string name="choice_open_home">الرئيسية</string>
     <string name="summary_player_left">المشغّل على اليسار</string>
     <string name="summary_player_right">المشغّل على اليمين</string>
-    <string name="summary_usb_audio">الصوت عبر Gearslip</string>
+    <string name="summary_usb_audio">الصوت عبر Dashline</string>
     <string name="summary_bluetooth_audio">صوت البلوتوث</string>
     <string name="summary_directions_on">الإرشادات الصوتية مفعّلة</string>
     <string name="summary_directions_off">الإرشادات الصوتية متوقفة</string>
@@ -215,7 +215,7 @@
     <string name="car_audio">صوت السيارة</string>
     <string name="car_audio_bt">بلوتوث (موصى به)</string>
     <string name="car_audio_bt_sub">لا سؤال في كل رحلة، ويصل صوت تطبيق الخرائط إلى السيارة</string>
-    <string name="car_audio_usb_sub">صوت أنقى بلا تأخير. في كل رحلة يطلب Android منك مشاركة الشاشة، وهذا ما يتيح لـ Gearslip إرسال الصوت</string>
+    <string name="car_audio_usb_sub">صوت أنقى بلا تأخير. في كل رحلة يطلب Android منك مشاركة الشاشة، وهذا ما يتيح لـ Dashline إرسال الصوت</string>
     <string name="car_audio_usb_footer">شغّل الأمر الموجود في «المساعدة» مرة واحدة، فيتوقف Android عن السؤال.</string>
     <string name="car_audio_bt_footer">المكالمات تمر عبر البلوتوث في كلتا الحالتين.</string>
 
@@ -225,7 +225,7 @@
     <string name="screen_preview_size">حجم المعاينة</string>
     <string name="screen_preview_note">الحجم الذي تُرسم به معاينة السيارة، مثل 1920x720.</string>
     <string name="screen_car_screen">شاشة السيارة</string>
-    <string name="screen_footer">يستخدم Gearslip الحجم الذي تبلغ عنه السيارة ما لم تضبط حجمًا بنفسك.</string>
+    <string name="screen_footer">يستخدم Dashline الحجم الذي تبلغ عنه السيارة ما لم تضبط حجمًا بنفسك.</string>
     <string name="screen_size">حجم الشاشة</string>
     <string name="screen_from_car">من السيارة</string>
     <string name="screen_crop">قص الحواف</string>
@@ -236,7 +236,7 @@
     <string name="screen_last_car">آخر سيارة</string>
     <string name="screen_last_car_sub">حجم آخر سيارة اتصلت بها</string>
     <string name="screen_this_screen">هذه الشاشة</string>
-    <string name="screen_this_screen_sub">يملأ شاشة هذا الجهاز، لوحدة رأس تشغّل Gearslip بنفسها</string>
+    <string name="screen_this_screen_sub">يملأ شاشة هذا الجهاز، لوحدة رأس تشغّل Dashline بنفسها</string>
     <string name="screen_custom">مخصص</string>
     <string name="screen_enter_size">أدخل حجمًا</string>
     <string name="screen_change_custom">تغيير الحجم المخصص</string>
@@ -253,25 +253,25 @@
     <string name="help_full_list">عرض القائمة الكاملة</string>
     <string name="help_first_drive">قبل رحلتك الأولى</string>
     <string name="help_in_car">في السيارة</string>
-    <string name="help_usb_audio">الصوت عبر Gearslip</string>
+    <string name="help_usb_audio">الصوت عبر Dashline</string>
 
     <string name="help_aa_off">أوقف Android Auto.</string>
-    <string name="help_aa_off_detail">عطّل تطبيق Android Auto أو أزل تثبيته، لتتواصل السيارة مع Gearslip بدلًا منه.</string>
+    <string name="help_aa_off_detail">عطّل تطبيق Android Auto أو أزل تثبيته، لتتواصل السيارة مع Dashline بدلًا منه.</string>
     <string name="help_cert">حمّل شهادة.</string>
     <string name="help_cert_detail">من «الإعدادات» نزّل شهادة aasdk التي تقبلها معظم السيارات. إذا رفضتها سيارتك فاستورد شهادتك الخاصة.</string>
     <string name="help_mic">اسمح بالميكروفون.</string>
-    <string name="help_mic_detail">من دونه لا يسمح Android لأي تطبيق بتمرير الموسيقى إلى السيارة. لا يستمع Gearslip إلا عندما تنقر على الميكروفون أو تضغط زر التحدث على المقود.</string>
+    <string name="help_mic_detail">من دونه لا يسمح Android لأي تطبيق بتمرير الموسيقى إلى السيارة. لا يستمع Dashline إلا عندما تنقر على الميكروفون أو تضغط زر التحدث على المقود.</string>
     <string name="help_plug_in">وصّل الكابل أو اتصل لاسلكيًا.</string>
-    <string name="help_plug_in_detail">يفتح Gearslip تلقائيًا عندما تتصل السيارة. للاتصال اللاسلكي، أقرن الهاتف بالسيارة أولًا ثم انقر على «اتصال لاسلكي» في الشاشة الرئيسية.</string>
+    <string name="help_plug_in_detail">يفتح Dashline تلقائيًا عندما تتصل السيارة. للاتصال اللاسلكي، أقرن الهاتف بالسيارة أولًا ثم انقر على «اتصال لاسلكي» في الشاشة الرئيسية.</string>
     <string name="help_pair">أقرن عبر البلوتوث للمكالمات.</string>
-    <string name="help_pair_detail">تُسمع المكالمات في السيارة بعد إقران الهاتف والسيارة. يعرض Gearslip الإقران في أول مرة توصل فيها الهاتف.</string>
+    <string name="help_pair_detail">تُسمع المكالمات في السيارة بعد إقران الهاتف والسيارة. يعرض Dashline الإقران في أول مرة توصل فيها الهاتف.</string>
     <string name="help_answer">ردّ على المكالمات من شاشة السيارة.</string>
-    <string name="help_answer_detail">اضبط Gearslip تطبيقًا لمعرّف المتصل والرسائل المزعجة. من دون ذلك يرن الهاتف، لكن لا يمكن الرد إلا منه.</string>
+    <string name="help_answer_detail">اضبط Dashline تطبيقًا لمعرّف المتصل والرسائل المزعجة. من دون ذلك يرن الهاتف، لكن لا يمكن الرد إلا منه.</string>
     <string name="help_prompt">أوقف سؤال الصوت في كل رحلة.</string>
     <string name="help_prompt_detail">وصّل الهاتف بحاسوب مفعّل فيه تصحيح أخطاء USB وشغّل هذا مرة واحدة. إن تخطيته فستنقر على «ابدأ» كلما انطلقت.</string>
     <string name="help_readable">أبقِ الإشعارات مقروءة.</string>
-    <string name="help_readable_detail">يخفي Android محتوى الإشعارات أثناء مشاركة الصوت. شغّل هذا أيضًا، فيرفع Gearslip ذلك فقط أثناء ذهاب الموسيقى إلى السيارة.</string>
-    <string name="help_which_cars_body">تقبل معظم السيارات شهادة aasdk. منذ نحو عام 2020 أضافت بعض السيارات فحوصات أمان أحدث ترفضها، وفي هذه السيارات يحتاج Gearslip إلى شهادة خاصة بك.</string>
+    <string name="help_readable_detail">يخفي Android محتوى الإشعارات أثناء مشاركة الصوت. شغّل هذا أيضًا، فيرفع Dashline ذلك فقط أثناء ذهاب الموسيقى إلى السيارة.</string>
+    <string name="help_which_cars_body">تقبل معظم السيارات شهادة aasdk. منذ نحو عام 2020 أضافت بعض السيارات فحوصات أمان أحدث ترفضها، وفي هذه السيارات يحتاج Dashline إلى شهادة خاصة بك.</string>
 
     <!-- Updates -->
     <string name="update_downloaded_ask">نُزّل. سيسأل Android قبل التثبيت.</string>
@@ -286,11 +286,11 @@
     <string name="update_check_auto">التحقق تلقائيًا</string>
     <string name="update_once_a_day">مرة يوميًا</string>
 
-    <string name="update_unplug_first">افصل الهاتف عن السيارة للتثبيت. التثبيت يغلق Gearslip.</string>
-    <string name="update_card_title">صدر Gearslip %1$s</string>
+    <string name="update_unplug_first">افصل الهاتف عن السيارة للتثبيت. التثبيت يغلق Dashline.</string>
+    <string name="update_card_title">صدر Dashline %1$s</string>
     <string name="update_downloading">جارٍ التنزيل… %1$d%%</string>
     <string name="update_debug_manual">إصدارات التصحيح لا تتحقق إلا عند النقر على «التحقق الآن»</string>
-    <string name="update_checks_daily">يتحقق Gearslip مرة يوميًا</string>
+    <string name="update_checks_daily">يتحقق Dashline مرة يوميًا</string>
     <string name="update_version_out">صدر الإصدار %1$s</string>
     <string name="update_version_ready">الإصدار %1$s جاهز للتثبيت</string>
     <string name="update_dialog_status">الإصدار %1$s. %2$s.</string>
@@ -307,11 +307,11 @@
     <string name="about_copy_address">نسخ العنوان</string>
     <string name="close">إغلاق</string>
     <string name="about_matrix">انضم إلى الدردشة على Matrix</string>
-    <string name="about_matrix_sub">تحدث مع سائقين آخرين عن السيارات والتطبيقات وGearslip</string>
-    <string name="about_translate">ساعد في ترجمة Gearslip</string>
+    <string name="about_matrix_sub">تحدث مع سائقين آخرين عن السيارات والتطبيقات وDashline</string>
+    <string name="about_translate">ساعد في ترجمة Dashline</string>
     <string name="about_translate_sub">صحّح لغتك أو أضفها على Weblate. بدأت بعض الترجمات ترجمةً آلية.</string>
     <string name="about_source">الشيفرة المصدرية</string>
-    <string name="about_source_sub">اقرأ شيفرة Gearslip أو عدّلها بموجب رخصة AGPL</string>
+    <string name="about_source_sub">اقرأ شيفرة Dashline أو عدّلها بموجب رخصة AGPL</string>
     <string name="about_voice_credits">شكر خاص للصوت</string>
 
     <string name="about_no_wallet">لم يُعثر على تطبيق محفظة Monero. انسخ العنوان بدلًا من ذلك.</string>
@@ -328,11 +328,11 @@
     <string name="certsetup_skip">تخطي إعداد الاتصال بالسيارة</string>
 
     <string name="certsetup_loaded">لا تقبل السيارات إلا الشهادات الصادرة عن Google، ولديك واحدة محمّلة.</string>
-    <string name="certsetup_choose">لا تقبل السيارات إلا الشهادات الصادرة عن Google. لا يتضمن Gearslip أي شهادة، فاختر مصدر شهادتك.</string>
+    <string name="certsetup_choose">لا تقبل السيارات إلا الشهادات الصادرة عن Google. لا يتضمن Dashline أي شهادة، فاختر مصدر شهادتك.</string>
     <string name="certsetup_aasdk_sub">ينشر مشروع aasdk مفتوح المصدر هذه الشهادة على github.com/opencardev/aasdk. تقبلها معظم السيارات. بعض السيارات من نحو عام 2020 فما بعد ترفضها، وعندها عليك استيراد شهادتك الخاصة.</string>
 
     <!-- Storage -->
-    <string name="storage_title">مساحة تخزين Gearslip</string>
+    <string name="storage_title">مساحة تخزين Dashline</string>
     <string name="storage_measuring">جارٍ القياس…</string>
     <string name="storage_lyrics">كلمات الأغاني</string>
     <string name="storage_clear">مسح</string>
@@ -340,9 +340,9 @@
     <string name="storage_remove">إزالة</string>
     <string name="storage_logs">السجلات القديمة</string>
     <string name="storage_other">ملفات مؤقتة أخرى</string>
-    <string name="storage_delete_all">حذف كل بيانات Gearslip</string>
+    <string name="storage_delete_all">حذف كل بيانات Dashline</string>
 
-    <string name="storage_total">تشغل بيانات Gearslip %1$s من مساحة تخزين الهاتف.</string>
+    <string name="storage_total">تشغل بيانات Dashline %1$s من مساحة تخزين الهاتف.</string>
     <plurals name="storage_lyrics_detail">
         <item quantity="zero">%1$d أغنية · %2$s. تُنزَّل الكلمات الممسوحة مجددًا عندما تفتحها.</item>
         <item quantity="one">%1$d أغنية · %2$s. تُنزَّل الكلمات الممسوحة مجددًا عندما تفتحها.</item>
@@ -353,8 +353,8 @@
     </plurals>
     <string name="storage_voice_detail">%1$s. تحتاجها الأوامر الصوتية؛ نزّلها مجددًا من «الإعدادات».</string>
     <string name="storage_logs_detail">%1$s. سجلات من مرات تشغيل سابقة؛ يبقى سجل هذا التشغيل.</string>
-    <string name="storage_other_detail">%1$s. تحديثات منزّلة وملفات أخرى يستطيع Gearslip إنشاءها مجددًا.</string>
-    <string name="storage_delete_armed">انقر على «حذف» مرة أخرى لمسح الإعدادات والشهادات ونماذج الصوت والسجلات. يُغلق Gearslip ويبدأ من الإعداد في المرة القادمة.</string>
+    <string name="storage_other_detail">%1$s. تحديثات منزّلة وملفات أخرى يستطيع Dashline إنشاءها مجددًا.</string>
+    <string name="storage_delete_armed">انقر على «حذف» مرة أخرى لمسح الإعدادات والشهادات ونماذج الصوت والسجلات. يُغلق Dashline ويبدأ من الإعداد في المرة القادمة.</string>
     <string name="storage_delete_sub">الإعدادات والشهادات ونماذج الصوت والكلمات والسجلات.</string>
     <string name="storage_delete">حذف</string>
     <string name="storage_delete_ellipsis">حذف…</string>
@@ -365,10 +365,10 @@
     <string name="donate_bmac">اشترِ لي قهوة</string>
     <string name="donate_card">تبرّع مرة بالبطاقة</string>
 
-    <string name="donate_body">Gearslip مجاني، بلا إعلانات ولا تتبع. إن كان يوصلك إلى الطريق، فدعمك يبقيه مستمرًا.</string>
+    <string name="donate_body">Dashline مجاني، بلا إعلانات ولا تتبع. إن كان يوصلك إلى الطريق، فدعمك يبقيه مستمرًا.</string>
 
     <!-- Wireless -->
-    <string name="wireless_needs_permission">يحتاج Gearslip إلى الوصول إلى البلوتوث وشبكات Wi-Fi القريبة لهذا.</string>
+    <string name="wireless_needs_permission">يحتاج Dashline إلى الوصول إلى البلوتوث وشبكات Wi-Fi القريبة لهذا.</string>
     <string name="wireless_enable_permission">تفعيل إذن الأجهزة المجاورة</string>
     <string name="wireless_connect">اتصال لاسلكي</string>
     <string name="wireless_which_car">أي سيارة؟</string>
@@ -409,9 +409,9 @@
     <string name="audio_mic_title">يحتاج صوت السيارة إلى إذن الميكروفون</string>
     <string name="audio_open_settings">فتح إعدادات التطبيق</string>
 
-    <string name="audio_bt_body">يعامل Android الموسيقى التي يرسلها Gearslip إلى السيارة كمشاركة للشاشة، لذا يسأل في كل رحلة، بالكابل أو لاسلكيًا. عبر البلوتوث لا يسأل أبدًا. يمكنك تغيير هذا لاحقًا من «الإعدادات».</string>
-    <string name="audio_keep_usb">أو أبقِ الصوت عبر Gearslip وأوقف السؤال نهائيًا: وصّل الهاتف بحاسوب مفعّل فيه تصحيح أخطاء USB وشغّل هذا مرة واحدة.</string>
-    <string name="audio_mic_body">لا يسمح Android لتطبيق بإرسال صوت التطبيقات الأخرى إلى السيارة إلا إذا كان لديه إذن الميكروفون. هذا الإذن متوقف لـ Gearslip، لذا تُشغَّل الموسيقى على الهاتف. فعّله من «الأذونات» ثم «الميكروفون».</string>
+    <string name="audio_bt_body">يعامل Android الموسيقى التي يرسلها Dashline إلى السيارة كمشاركة للشاشة، لذا يسأل في كل رحلة، بالكابل أو لاسلكيًا. عبر البلوتوث لا يسأل أبدًا. يمكنك تغيير هذا لاحقًا من «الإعدادات».</string>
+    <string name="audio_keep_usb">أو أبقِ الصوت عبر Dashline وأوقف السؤال نهائيًا: وصّل الهاتف بحاسوب مفعّل فيه تصحيح أخطاء USB وشغّل هذا مرة واحدة.</string>
+    <string name="audio_mic_body">لا يسمح Android لتطبيق بإرسال صوت التطبيقات الأخرى إلى السيارة إلا إذا كان لديه إذن الميكروفون. هذا الإذن متوقف لـ Dashline، لذا تُشغَّل الموسيقى على الهاتف. فعّله من «الأذونات» ثم «الميكروفون».</string>
 
     <!-- Phone keyboard -->
     <string name="typing_close">إغلاق لوحة مفاتيح السيارة</string>
@@ -448,9 +448,9 @@
     <string name="carset_save_vehicle">الحفظ لهذه المركبة</string>
     <string name="carset_no_profile">لا يوجد ملف مركبة مطابق</string>
 
-    <string name="carset_audio_note">«عبر Gearslip» يرسل صوت الهاتف عبر الاتصال بالسيارة، بالكابل أو لاسلكيًا. يطلب Android مشاركة الشاشة في كل رحلة، وبعض التطبيقات تمنع ذلك. البلوتوث يشغّل الصوت كما يفعل الهاتف عادةً، ولا يسأل Android أبدًا.</string>
-    <string name="carset_directions_note">يقرأ Gearslip كل منعطف بصوت عالٍ عبر مكبرات صوت السيارة، وتنخفض الموسيقى أثناء ذلك. أوقفه إذا كان صوت تطبيق الخرائط نفسه يُسمع في السيارة بالفعل.</string>
-    <string name="carset_phone_speech_note">يستمع عبر خدمة الكلام في الهاتف بدلًا من خدمة Gearslip. في معظم الهواتف هي خدمة Google، وقد ترسل صوتك إلى Google. لا توجد خدمة كهذه في GrapheneOS، لذا يواصل Gearslip استخدام خدمته.</string>
+    <string name="carset_audio_note">«عبر Dashline» يرسل صوت الهاتف عبر الاتصال بالسيارة، بالكابل أو لاسلكيًا. يطلب Android مشاركة الشاشة في كل رحلة، وبعض التطبيقات تمنع ذلك. البلوتوث يشغّل الصوت كما يفعل الهاتف عادةً، ولا يسأل Android أبدًا.</string>
+    <string name="carset_directions_note">يقرأ Dashline كل منعطف بصوت عالٍ عبر مكبرات صوت السيارة، وتنخفض الموسيقى أثناء ذلك. أوقفه إذا كان صوت تطبيق الخرائط نفسه يُسمع في السيارة بالفعل.</string>
+    <string name="carset_phone_speech_note">يستمع عبر خدمة الكلام في الهاتف بدلًا من خدمة Dashline. في معظم الهواتف هي خدمة Google، وقد ترسل صوتك إلى Google. لا توجد خدمة كهذه في GrapheneOS، لذا يواصل Dashline استخدام خدمته.</string>
     <string name="carset_vehicle_data_note">يضيف مربع «بيانات المركبة»: عرض مباشر وخام لقناة حساسات وحدة الرأس. تسميات الحقول (السرعة، الدورات، الوقود...) مأخوذة من مشاريع هندسة عكسية أخرى ولم يُتحقق منها في هذه السيارة. اعتبرها تخمينًا لا حقيقة إلى أن ترى أحدها يتغير بنفسك.</string>
     <string name="carset_adaptive_note">يخفض جودة الصورة عندما لا تواكب السيارة، أو شبكة Wi-Fi فيها، ويرفعها مجددًا حين تستطيع. يسري عند الاتصال التالي.</string>
     <string name="carset_usable_height">الارتفاع القابل للاستخدام %1$dpx من 480</string>
@@ -468,11 +468,11 @@
     <string name="media_press_play">اضغط تشغيل لتكمل من حيث توقفت، أو ابحث عن شيء في «تصفّح».</string>
 
     <string name="media_keeps_library">يحتفظ %1$s بمكتبته لنفسه.</string>
-    <string name="media_needs_access">ما زال Gearslip قادرًا على تشغيله بمجرد حصوله على إذن الوصول إلى الإشعارات. اسمح بذلك على الهاتف عندما تركن السيارة.</string>
+    <string name="media_needs_access">ما زال Dashline قادرًا على تشغيله بمجرد حصوله على إذن الوصول إلى الإشعارات. اسمح بذلك على الهاتف عندما تركن السيارة.</string>
     <string name="media_not_running">%1$s لا يعمل.</string>
-    <string name="media_not_running_body">يُشغَّل %1$s عبر مشغّل Gearslip، لكن فقط أثناء فتحه على الهاتف. افتحه مرة ويواصل التشغيل هنا في السيارة.</string>
+    <string name="media_not_running_body">يُشغَّل %1$s عبر مشغّل Dashline، لكن فقط أثناء فتحه على الهاتف. افتحه مرة ويواصل التشغيل هنا في السيارة.</string>
     <string name="media_open_app">فتح %1$s</string>
-    <string name="media_refused">لم يسمح %1$s لـ Gearslip بتصفّحه.</string>
+    <string name="media_refused">لم يسمح %1$s لـ Dashline بتصفّحه.</string>
     <string name="media_refused_body">بعض تطبيقات الوسائط لا تقبل إلا المضيف الخاص بـ Google.</string>
     <string name="media_connecting">جارٍ الاتصال بـ %1$s…</string>
     <string name="media_search">البحث في %1$s</string>
@@ -494,8 +494,8 @@
     <string name="media_nothing_queued">قائمة الانتظار فارغة.</string>
     <string name="media_play">تشغيل</string>
 
-    <string name="media_queue_empty_idle">لا شيء قيد التشغيل - ليس كل تطبيق يخبر Gearslip بما سيأتي بعد ذلك.</string>
-    <string name="media_queue_empty_playing">فقط ما يُشغَّل الآن - ليس كل تطبيق يخبر Gearslip بما سيأتي بعد ذلك.</string>
+    <string name="media_queue_empty_idle">لا شيء قيد التشغيل - ليس كل تطبيق يخبر Dashline بما سيأتي بعد ذلك.</string>
+    <string name="media_queue_empty_playing">فقط ما يُشغَّل الآن - ليس كل تطبيق يخبر Dashline بما سيأتي بعد ذلك.</string>
 
     <!-- Player controls -->
     <string name="player_previous">السابق</string>
@@ -587,7 +587,7 @@
 
     <!-- Weather -->
     <string name="weather_waiting_fix">في انتظار تحديد الموقع.</string>
-    <string name="weather_allow_location">اسمح لـ Gearslip بالوصول إلى الموقع على الهاتف لترى الطقس.</string>
+    <string name="weather_allow_location">اسمح لـ Dashline بالوصول إلى الموقع على الهاتف لترى الطقس.</string>
     <string name="weather_unreachable">تعذّر الوصول إلى خدمة الطقس.</string>
     <string name="weather_clear">صافٍ</string>
     <string name="weather_mostly_clear">صافٍ غالبًا</string>
@@ -629,7 +629,7 @@
     <string name="dialer_no_contacts">لم يُعثر على جهات اتصال لها رقم هاتف.</string>
     <string name="dialer_search">البحث في جهات الاتصال</string>
 
-    <string name="dialer_needs_permission">يحتاج Gearslip إلى إذنَي الهاتف وجهات الاتصال للاتصال من هنا. اسمح بهما على الهاتف عندما تركن السيارة.</string>
+    <string name="dialer_needs_permission">يحتاج Dashline إلى إذنَي الهاتف وجهات الاتصال للاتصال من هنا. اسمح بهما على الهاتف عندما تركن السيارة.</string>
     <string name="dialer_no_match">لا توجد جهات اتصال تطابق «%1$s».</string>
     <string name="dialer_call_who">الاتصال بـ %1$s؟</string>
 
@@ -638,10 +638,10 @@
     <string name="carui_drive_safely">قُد بأمان</string>
     <string name="carui_understand">فهمت</string>
 
-    <string name="carui_unofficial">Gearslip برنامج غير رسمي: لم تصنعه أو تراجعه أي شركة سيارات، وقد يتوقف عن العمل دون سابق إنذار.</string>
+    <string name="carui_unofficial">Dashline برنامج غير رسمي: لم تصنعه أو تراجعه أي شركة سيارات، وقد يتوقف عن العمل دون سابق إنذار.</string>
     <string name="carui_never_interact">لا تستخدم هذه الشاشة أبدًا أثناء القيادة. اضبط المسار أو الأغنية قبل أن تنطلق، ثم أبقِ انتباهك على الطريق.</string>
     <string name="carui_this_app">هذا التطبيق</string>
-    <string name="carui_app_unsupported">لا يعمل %1$s مع Gearslip بعد.</string>
+    <string name="carui_app_unsupported">لا يعمل %1$s مع Dashline بعد.</string>
     <string name="carui_app_unsupported_body">لم يبدأ. بعض التطبيقات لا تعمل إلا في Android Auto من Google.</string>
 
     <!-- Nav bar -->
@@ -663,7 +663,7 @@
     <string name="notif_title">الإشعارات</string>
     <string name="notif_clear_all">مسح الكل</string>
     <string name="notif_empty">لا شيء بعد. ستظهر هنا الإشعارات الجديدة من الهاتف.</string>
-    <string name="notif_off">يحتاج Gearslip إلى إذن الوصول إلى الإشعارات لعرضها هنا. اسمح بذلك على الهاتف عندما تركن السيارة.</string>
+    <string name="notif_off">يحتاج Dashline إلى إذن الوصول إلى الإشعارات لعرضها هنا. اسمح بذلك على الهاتف عندما تركن السيارة.</string>
     <string name="notif_replied">تم الرد</string>
 
     <!-- Messages -->
@@ -704,7 +704,7 @@
     <string name="call_ringing">يرن بصوت عالٍ بالفعل - ردّ هنا أو دعه يرن.</string>
 
     <!-- Screen sharing -->
-    <string name="phoneapps_touch_off">اللمس متوقف. فعّل Gearslip من الإعدادات &gt; تسهيل الاستخدام على الهاتف.</string>
+    <string name="phoneapps_touch_off">اللمس متوقف. فعّل Dashline من الإعدادات &gt; تسهيل الاستخدام على الهاتف.</string>
 
     <!-- What's new in the car -->
     <string name="whatsnew_show_after">الإظهار بعد التحديثات</string>
@@ -717,7 +717,7 @@
     <string name="keyboard_submit">إرسال</string>
 
     <!-- Launcher -->
-    <string name="launcher_broken">لا يعمل مع Gearslip</string>
+    <string name="launcher_broken">لا يعمل مع Dashline</string>
 
     <!-- Car app stage -->
     <string name="stage_car_app">تطبيق السيارة</string>
@@ -836,11 +836,11 @@
 
     <!-- Cluster screen -->
     <string name="car_cluster_video">بطاقة المنعطف على شاشة العدادات</string>
-    <string name="car_cluster_video_note">لسيارة فيها شاشة ثانية ضمن لوحة العدادات: يعرض Gearslip المنعطف التالي هناك. يسري عند الاتصال التالي.</string>
+    <string name="car_cluster_video_note">لسيارة فيها شاشة ثانية ضمن لوحة العدادات: يعرض Dashline المنعطف التالي هناك. يسري عند الاتصال التالي.</string>
 
     <!-- Connection status on Home -->
     <string name="status_idle">غير متصل</string>
-    <string name="status_idle_detail">وصّل الهاتف بمنفذ USB في السيارة، أو اتصل لاسلكيًا. يفتح Gearslip تلقائيًا عندما تستجيب السيارة.</string>
+    <string name="status_idle_detail">وصّل الهاتف بمنفذ USB في السيارة، أو اتصل لاسلكيًا. يفتح Dashline تلقائيًا عندما تستجيب السيارة.</string>
     <string name="status_connecting">جارٍ الاتصال</string>
     <string name="status_projecting">جارٍ العرض</string>
     <string name="status_projecting_detail">البث إلى وحدة الرأس.</string>
@@ -848,7 +848,7 @@
     <string name="status_disconnected_detail">لم تعد وحدة الرأس متصلة.</string>
     <string name="places_title">الأماكن المحفوظة</string>
     <string name="places_sub">قل “navigate home” في أي تطبيق خرائط</string>
-    <string name="places_intro">قل “navigate home” أو “take me to work” أو “navigate to” مع اسم اخترته، وسيرسل Gearslip العنوان إلى تطبيق الخرائط. الأوامر الصوتية بالإنجليزية فقط حاليًا.</string>
+    <string name="places_intro">قل “navigate home” أو “take me to work” أو “navigate to” مع اسم اخترته، وسيرسل Dashline العنوان إلى تطبيق الخرائط. الأوامر الصوتية بالإنجليزية فقط حاليًا.</string>
     <string name="places_home">المنزل</string>
     <string name="places_work">العمل</string>
     <string name="places_other">مكان %1$d</string>
@@ -856,7 +856,7 @@
     <string name="places_address">العنوان</string>
     <string name="places_here">استخدام موقعي الحالي</string>
     <string name="places_finding">جارٍ البحث…</string>
-    <string name="places_not_found">لم يعثر Gearslip على موقعك. تأكد من تشغيل الموقع.</string>
+    <string name="places_not_found">لم يعثر Dashline على موقعك. تأكد من تشغيل الموقع.</string>
     <string name="places_clear">مسح</string>
     <string name="settings_language">اللغة</string>
     <string name="settings_language_phone">مثل لغة الهاتف</string>
@@ -869,19 +869,19 @@
     <string name="bt_address_not_now">ليس الآن</string>
     <string name="bt_address_open">فتح «لمحة عن الهاتف»</string>
     <string name="bt_address_type">اكتبه بدلًا من ذلك</string>
-    <string name="bt_address_use_body">يمرره Gearslip إلى سيارتك، فتعرف أن هذا هو الهاتف المقترن بها.</string>
+    <string name="bt_address_use_body">يمرره Dashline إلى سيارتك، فتعرف أن هذا هو الهاتف المقترن بها.</string>
     <string name="bt_address_use_title">هل تريد استخدام عنوان البلوتوث هذا؟</string>
     <string name="bt_address_your_car">سيارتك</string>
     <string name="car_apps_finding">جارٍ البحث عن التطبيقات…</string>
     <string name="car_apps_none">لم يُعثر على تطبيقات للسيارة</string>
     <string name="car_apps_sub">اختر التطبيقات التي تظهر في السيارة</string>
-    <string name="car_audio_blocked">لا يسمح %1$s للتطبيقات الأخرى بتشغيل صوته، لذا لا يصل إلى السيارة عبر Gearslip. جرّب تطبيق موسيقى آخر.</string>
-    <string name="car_audio_switched">تُطفئ هذه السيارة موسيقى البلوتوث أثناء عمل Gearslip، لذا تمر الموسيقى الآن عبر Gearslip. اسمح بالطلب على هاتفك.</string>
+    <string name="car_audio_blocked">لا يسمح %1$s للتطبيقات الأخرى بتشغيل صوته، لذا لا يصل إلى السيارة عبر Dashline. جرّب تطبيق موسيقى آخر.</string>
+    <string name="car_audio_switched">تُطفئ هذه السيارة موسيقى البلوتوث أثناء عمل Dashline، لذا تمر الموسيقى الآن عبر Dashline. اسمح بالطلب على هاتفك.</string>
     <string name="car_autoplay_note">يستأنف الموسيقى من حيث توقفت بمجرد اتصال السيارة.</string>
     <string name="car_density">كثافة شاشة السيارة</string>
     <string name="car_density_note">نص وأزرار أكبر، حتى داخل التطبيقات. جرّب 200 DPI مع ضبط الحجم على عادي. أعد توصيل السيارة أو افتح المعاينة من جديد لتطبيقه. إذا اقتُطعت الأزرار، فاختر DPI أقل أو «من السيارة».</string>
     <string name="car_directions_over_music">الإرشادات عبر قناة الموسيقى</string>
-    <string name="car_directions_over_music_note">لسيارة تفقد الاتصال أو تُعيد التشغيل بعد إرشاد منطوق. يمزج Gearslip كل إرشاد مع الموسيقى بدلًا من استخدام قناة الملاحة في السيارة.</string>
+    <string name="car_directions_over_music_note">لسيارة تفقد الاتصال أو تُعيد التشغيل بعد إرشاد منطوق. يمزج Dashline كل إرشاد مع الموسيقى بدلًا من استخدام قناة الملاحة في السيارة.</string>
     <string name="car_experimental_note">ميزات ما زالت قيد الاختبار. قد لا تعمل في كل سيارة.</string>
     <string name="car_player_beside_map_note">جهة الخريطة التي يُثبَّت فيها المشغل عند النقر على زر التثبيت.</string>
     <string name="carset_advanced">متقدم</string>
@@ -893,13 +893,13 @@
     <string name="dialer_missed">فائتة · %1$s</string>
     <string name="dialer_no_recents">لا توجد مكالمات حديثة.</string>
     <string name="dialer_recents">الأخيرة</string>
-    <string name="dialer_recents_needs_permission">يحتاج Gearslip إلى إذن سجلات المكالمات لعرض المكالمات الأخيرة.</string>
+    <string name="dialer_recents_needs_permission">يحتاج Dashline إلى إذن سجلات المكالمات لعرض المكالمات الأخيرة.</string>
     <string name="help_bluetooth_first">وصّل البلوتوث قبل الكابل.</string>
     <string name="help_bluetooth_first_detail">إذا لم تتصل الموسيقى عبر البلوتوث، فدع السيارة تجد الهاتف عبر البلوتوث أولًا، ثم وصّل الكابل. بعض السيارات تختلط عليها الأمور إذا جاء الكابل أولًا.</string>
     <string name="help_usb_data">اسمح ببيانات USB.</string>
     <string name="help_usb_data_detail">قد يحظر GrapheneOS البيانات على منفذ USB. إذا كان التحكم في منفذ USB-C مضبوطًا على «الشحن فقط»، فلن ترى السيارة الهاتف أبدًا، حتى مع كابل بيانات. اضبطه للسماح بالبيانات.</string>
-    <string name="launcher_in_car">هذا الجهاز متصل بسيارة، لذا يظهر Gearslip على شاشة السيارة.</string>
-    <string name="launcher_open_gearslip">فتح Gearslip</string>
+    <string name="launcher_in_car">هذا الجهاز متصل بسيارة، لذا يظهر Dashline على شاشة السيارة.</string>
+    <string name="launcher_open_gearslip">فتح Dashline</string>
     <string name="nav_arrival">الوصول</string>
     <string name="nav_lane_any">أي مسار</string>
     <string name="nav_lane_from_left">استخدم المسار %1$d من اليسار</string>
@@ -924,21 +924,21 @@
     </plurals>
     <string name="nav_to_go">متبقية</string>
     <string name="privacy_policy">سياسة الخصوصية</string>
-    <string name="privacy_policy_sub">ما يرسله Gearslip، ولمن، ولماذا</string>
+    <string name="privacy_policy_sub">ما يرسله Dashline، ولمن، ولماذا</string>
     <string name="settings_bt_address">عنوان بلوتوث الهاتف</string>
-    <string name="settings_bt_address_hint">انسخه من إعدادات أندرويد، ضمن «لمحة عن الهاتف». يمرره Gearslip إلى السيارة، فتعرف أن الهاتف الموصول بالكابل هو المقترن بها.</string>
+    <string name="settings_bt_address_hint">انسخه من إعدادات أندرويد، ضمن «لمحة عن الهاتف». يمرره Dashline إلى السيارة، فتعرف أن الهاتف الموصول بالكابل هو المقترن بها.</string>
     <string name="settings_bt_address_invalid">هذا ليس عنوان بلوتوث. يبدو مثل 12:34:56:78:9A:BC.</string>
-    <string name="settings_bt_address_off">غير مضبوط. فقط لسيارة تقطع البلوتوث عندما يتصل Gearslip.</string>
+    <string name="settings_bt_address_off">غير مضبوط. فقط لسيارة تقطع البلوتوث عندما يتصل Dashline.</string>
     <string name="settings_use_as_launcher">الاستخدام كمشغّل</string>
-    <string name="settings_use_as_launcher_off">لوحدة رأسية أو جهاز لوحي على لوحة القيادة. تصبح شاشة السيارة في Gearslip الشاشة الرئيسية لهذا الجهاز.</string>
-    <string name="settings_use_as_launcher_on">يمكن أن يكون Gearslip الشاشة الرئيسية لهذا الجهاز. اختره ضمن «تطبيق الشاشة الرئيسية التلقائي».</string>
+    <string name="settings_use_as_launcher_off">لوحدة رأسية أو جهاز لوحي على لوحة القيادة. تصبح شاشة السيارة في Dashline الشاشة الرئيسية لهذا الجهاز.</string>
+    <string name="settings_use_as_launcher_on">يمكن أن يكون Dashline الشاشة الرئيسية لهذا الجهاز. اختره ضمن «تطبيق الشاشة الرئيسية التلقائي».</string>
     <string name="status_no_car">الهاتف يُشحن، لكن لم تستجب أي سيارة. بعض الكابلات تشحن فقط؛ جرّب كابلًا ينقل البيانات.</string>
     <string name="status_no_car_graphene">الهاتف يُشحن، لكن لم تستجب أي سيارة. تحقّق من أن التحكم في منفذ USB-C، ضمن الأمان والخصوصية، يسمح بالبيانات وليس مضبوطًا على «الشحن فقط».</string>
     <string name="status_open_settings">فتح الإعدادات</string>
-    <string name="status_stuck_cable">لم تعرض السيارة Gearslip بعد. افصل الكابل، وانتظر بضع ثوانٍ، ثم وصّله من جديد. إذا تكرر ذلك، فجرّب كابلًا أو منفذ USB آخر، وشارك السجل في بلاغ.</string>
-    <string name="status_stuck_wireless">لم تعرض السيارة Gearslip بعد. أطفئ السيارة وشغّلها من جديد، أو اتصل بكابل. إذا تكرر ذلك، فشارك السجل في بلاغ.</string>
+    <string name="status_stuck_cable">لم تعرض السيارة Dashline بعد. افصل الكابل، وانتظر بضع ثوانٍ، ثم وصّله من جديد. إذا تكرر ذلك، فجرّب كابلًا أو منفذ USB آخر، وشارك السجل في بلاغ.</string>
+    <string name="status_stuck_wireless">لم تعرض السيارة Dashline بعد. أطفئ السيارة وشغّلها من جديد، أو اتصل بكابل. إذا تكرر ذلك، فشارك السجل في بلاغ.</string>
     <string name="update_installed_text">ثُبّت عبر Wi-Fi بينما لم تكن أي سيارة متصلة.</string>
-    <string name="update_installed_title">حُدّث Gearslip إلى %1$s</string>
+    <string name="update_installed_title">حُدّث Dashline إلى %1$s</string>
     <string name="update_silent">تثبيت التحديثات تلقائيًا</string>
     <string name="update_silent_sub">الإصدارات النهائية فقط، عبر Wi-Fi، عندما لا تكون أي سيارة متصلة</string>
     <string name="assist_listening">جارٍ الاستماع…</string>
@@ -957,7 +957,7 @@
     <string name="web_remove_this_bookmark">إزالة من صفحة البدء</string>
     <string name="browser_search_engine">محرك البحث</string>
     <string name="browser_bookmarks">الإشارات المرجعية</string>
-    <string name="browser_bookmarks_note">تظهر كمربعات في صفحة البدء بالمتصفح. يمكنك أيضًا مشاركة صفحة مع Gearslip من أي متصفح.</string>
+    <string name="browser_bookmarks_note">تظهر كمربعات في صفحة البدء بالمتصفح. يمكنك أيضًا مشاركة صفحة مع Dashline من أي متصفح.</string>
     <string name="browser_add_bookmark">إضافة إشارة مرجعية</string>
     <string name="browser_bookmark_name">الاسم</string>
     <string name="browser_bookmark_address">عنوان الويب</string>
@@ -972,18 +972,18 @@
     <string name="browser_list_note">أي قائمة بتنسيق Adblock Plus، مثل قائمة للغتك أو منطقتك.</string>
     <string name="browser_update_lists">تحديث القوائم الآن</string>
     <string name="browser_lists_status">%1$d قاعدة، حُدّثت %2$s</string>
-    <string name="browser_lists_never">%1$d قاعدة، من النسخة المضمّنة في Gearslip</string>
+    <string name="browser_lists_never">%1$d قاعدة، من النسخة المضمّنة في Dashline</string>
     <string name="browser_updating">جارٍ التحديث…</string>
     <string name="browser_update_failed">تعذّر التحديث. %1$s</string>
-    <string name="browser_shared_added">أُضيفت إلى صفحة البدء في Gearslip</string>
+    <string name="browser_shared_added">أُضيفت إلى صفحة البدء في Dashline</string>
     <string name="browser_shared_not_url">هذا ليس عنوان ويب</string>
-    <string name="browser_share_label">صفحة البدء في Gearslip</string>
+    <string name="browser_share_label">صفحة البدء في Dashline</string>
     <string name="summary_adblock_on">الإعلانات محظورة</string>
     <string name="summary_adblock_off">الإعلانات غير محظورة</string>
     <string name="car_nav_mic">زر الميكروفون</string>
     <string name="car_nav_mic_note">زر المساعد في شريط التنقل. يعمل زر الصوت في السيارة في كل الأحوال.</string>
     <string name="car_apps_add">إضافة تطبيق</string>
-    <string name="car_apps_add_note">لتطبيق لا تعرضه السيارة: تُشغَّل موسيقاه عبر مشغّل Gearslip، أو تظهر رسائله في شاشة الرسائل.</string>
+    <string name="car_apps_add_note">لتطبيق لا تعرضه السيارة: تُشغَّل موسيقاه عبر مشغّل Dashline، أو تظهر رسائله في شاشة الرسائل.</string>
     <string name="car_apps_add_pick">اختر تطبيقًا</string>
     <string name="car_apps_add_as">عرض %1$s بوصفه</string>
     <string name="car_apps_as_media">الموسيقى والصوت</string>
@@ -995,7 +995,7 @@
     <string name="cert_link">تنزيل من رابط</string>
     <string name="cert_link_sub">ملف شهادة تثق به، من عنوان تلصقه</string>
     <string name="cert_link_title">شهادة من رابط</string>
-    <string name="cert_link_note">الصق عنوان ملف ‎.p12، أو عنوان شهادة ومفتاحها بصيغة PEM أو DER. يحوّلها Gearslip إلى الصيغة التي تحتاجها السيارة.</string>
+    <string name="cert_link_note">الصق عنوان ملف ‎.p12، أو عنوان شهادة ومفتاحها بصيغة PEM أو DER. يحوّلها Dashline إلى الصيغة التي تحتاجها السيارة.</string>
     <string name="cert_link_label">رابط الشهادة أو ملف ‎.p12</string>
     <string name="cert_link_key">رابط المفتاح الخاص</string>
     <string name="cert_link_key_note">هذه شهادة بلا مفتاح. الصق رابط المفتاح أيضًا.</string>

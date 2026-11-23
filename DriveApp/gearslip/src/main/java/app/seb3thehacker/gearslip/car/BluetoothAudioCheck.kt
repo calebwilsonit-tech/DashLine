@@ -109,7 +109,7 @@ object BluetoothAudioCheck {
         if (!armed) return
         val context = appContext ?: return
         if (CarSettings.pipesNow) {
-            set(false, "audio goes through Gearslip")
+            set(false, "audio goes through Dashline")
             return
         }
         audioToCar { ok ->
@@ -128,9 +128,9 @@ object BluetoothAudioCheck {
         val car = CarBluetooth.carAddress ?: return
         val context = appContext ?: return
         if (!app.seb3thehacker.gearslip.audio.CarAudio.sinkOffered) return
-        log.i("Bluetooth audio: the car turned it off with Gearslip running, so this car's music goes through Gearslip")
+        log.i("Bluetooth audio: the car turned it off with Dashline running, so this car's music goes through Dashline")
         CarSettings.rememberAudioCar(car)
-        set(false, "audio goes through Gearslip")
+        set(false, "audio goes through Dashline")
         app.seb3thehacker.gearslip.audio.CarAudio.request()
         CarToasts.show(this, context.getString(R.string.car_audio_switched), androidx.car.app.CarToast.LENGTH_LONG)
     }

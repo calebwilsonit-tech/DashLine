@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.update
  */
 object GearslipLog {
 
-    const val TAG = "Gearslip"
+    const val TAG = "Dashline"
 
     private val stamp = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
     private val io = Executors.newSingleThreadExecutor()

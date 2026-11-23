@@ -93,7 +93,7 @@ fun CarPreviewScreen(onBack: () -> Unit) {
     // The frame is drawn the same way in both layouts; only what surrounds it differs.
     val frameContent: @Composable (Modifier) -> Unit = { modifier ->
         if (projector == null) {
-            Text("Gearslip is this device's home screen, so the car UI is already showing there.", modifier)
+            Text("Dashline is this device's home screen, so the car UI is already showing there.", modifier)
         } else {
             CarFrame(projector, width, height, modifier.aspectRatio(width.toFloat() / height))
         }

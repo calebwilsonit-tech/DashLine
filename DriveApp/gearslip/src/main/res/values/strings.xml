@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="touch_relay_description">Lets Gearslip replay touches from the car screen onto the phone while mirroring. Gearslip does not read screen content.</string>
+    <string name="touch_relay_description">Lets Dashline replay touches from the car screen onto the phone while mirroring. Dashline does not read screen content.</string>
 
     <!-- Setup guide -->
     <string name="guide_usage_title">Help other drivers.</string>
     <string name="guide_safety_title">Drive safely.</string>
-    <string name="guide_safety_body">Gearslip is unofficial. No carmaker made or checked it, and it can fail without warning. Set it up before you go, then keep your eyes on the road.</string>
+    <string name="guide_safety_body">Dashline is unofficial. No carmaker made or checked it, and it can fail without warning. Set it up before you go, then keep your eyes on the road.</string>
     <string name="guide_mic_title">Microphone.</string>
-    <string name="guide_mic_body">Gearslip uses it to send your music to the car and to hear you when you ask for something or reply to a message. What you say stays on the phone.</string>
+    <string name="guide_mic_body">Dashline uses it to send your music to the car and to hear you when you ask for something or reply to a message. What you say stays on the phone.</string>
     <string name="guide_location_title">Location.</string>
     <string name="guide_location_body">The car\'s map and nearby searches need it. Without it, the dashboard shows no map.</string>
     <string name="guide_calendar_title">Calendar.</string>
-    <string name="guide_calendar_body">The car screen shows your next event. Gearslip only reads your calendar.</string>
+    <string name="guide_calendar_body">The car screen shows your next event. Dashline only reads your calendar.</string>
     <string name="guide_calls_title">Calls and contacts.</string>
-    <string name="guide_calls_body">The car shows who\'s calling by name, and its Phone app can dial a number or call one of your contacts. Gearslip only reads them.</string>
+    <string name="guide_calls_body">The car shows who\'s calling by name, and its Phone app can dial a number or call one of your contacts. Dashline only reads them.</string>
     <string name="guide_bluetooth_title">Bluetooth.</string>
-    <string name="guide_bluetooth_body">The first time you plug in, Gearslip offers to pair your phone with the car, so calls play through its speakers.</string>
+    <string name="guide_bluetooth_body">The first time you plug in, Dashline offers to pair your phone with the car, so calls play through its speakers.</string>
     <string name="guide_notifications_title">Notifications.</string>
-    <string name="guide_notifications_body">While Gearslip is connected, it shows a notification with a button to stop. Without this, Android hides it.</string>
+    <string name="guide_notifications_body">While Dashline is connected, it shows a notification with a button to stop. Without this, Android hides it.</string>
     <string name="guide_messages_title">Messages.</string>
-    <string name="guide_messages_body">The car shows your messages, reads them aloud and lets you reply. Turn Gearslip on in the list this opens.</string>
+    <string name="guide_messages_body">The car shows your messages, reads them aloud and lets you reply. Turn Dashline on in the list this opens.</string>
     <string name="guide_android_auto_title">Turn off Android Auto.</string>
-    <string name="guide_android_auto_body">Android Auto is still installed, and it fights Gearslip for the car\'s USB connection. Disable or uninstall it on the screen this opens.</string>
-    <string name="guide_default_title">Choose Gearslip.</string>
-    <string name="guide_default_body">If your phone asks which app to open when you plug into the car, pick Gearslip and tap Always.</string>
+    <string name="guide_android_auto_body">Android Auto is still installed, and it fights Dashline for the car\'s USB connection. Disable or uninstall it on the screen this opens.</string>
+    <string name="guide_default_title">Choose Dashline.</string>
+    <string name="guide_default_body">If your phone asks which app to open when you plug into the car, pick Dashline and tap Always.</string>
     <string name="guide_audio_title">Car audio.</string>
     <string name="guide_audio_body">Pick how music reaches the car. Calls go over Bluetooth either way.</string>
     <string name="guide_voice_title">Voice.</string>
     <string name="guide_voice_body">Ask for directions, music, or a call by voice. Your phone turns speech into text by itself, and nothing you say leaves it. It needs %1$d MB, downloaded once. Use Wi-Fi if you can.</string>
     <string name="guide_audio_prompt_title">No audio prompt.</string>
-    <string name="guide_audio_prompt_body">Run this from a computer with USB debugging on, and Android trusts Gearslip with your audio for good. Without it, you tap Start once each drive.</string>
+    <string name="guide_audio_prompt_body">Run this from a computer with USB debugging on, and Android trusts Dashline with your audio for good. Without it, you tap Start once each drive.</string>
     <string name="guide_readable_title">Readable notifications.</string>
-    <string name="guide_readable_body">While audio goes to the car, Android hides what notifications say, as if you were sharing your screen. This lets Gearslip show them during a drive and hide them again after.</string>
+    <string name="guide_readable_body">While audio goes to the car, Android hides what notifications say, as if you were sharing your screen. This lets Dashline show them during a drive and hide them again after.</string>
     <string name="guide_answer_title">Answer calls.</string>
-    <string name="guide_answer_body">Make Gearslip your caller ID app, and the car can answer and decline calls. Without it, calls still ring, but only the phone can answer them.</string>
+    <string name="guide_answer_body">Make Dashline your caller ID app, and the car can answer and decline calls. Without it, calls still ring, but only the phone can answer them.</string>
     <string name="guide_apps_title">Good company.</string>
     <string name="guide_buttons_title">Your buttons.</string>
     <string name="guide_buttons_body">Pick how the car\'s buttons look. Change it any time in the car\'s settings.</string>
@@ -47,8 +47,8 @@
     <string name="guide_audio_bluetooth">Bluetooth</string>
     <string name="guide_recommended">Recommended</string>
     <string name="guide_audio_bluetooth_body">No prompt each drive, and your map app\'s voice reaches the car.</string>
-    <string name="guide_audio_usb">Through Gearslip</string>
-    <string name="guide_audio_usb_body">Clearer sound with no delay, but your map app\'s spoken directions play on the phone, not in the car. Each drive, Android asks you to share your screen, which lets Gearslip send the sound.</string>
+    <string name="guide_audio_usb">Through Dashline</string>
+    <string name="guide_audio_usb_body">Clearer sound with no delay, but your map app\'s spoken directions play on the phone, not in the car. Each drive, Android asks you to share your screen, which lets Dashline send the sound.</string>
     <string name="home_audio_usb_warning">Spoken directions from map apps play on the phone, not in the car. Choose Bluetooth to hear them in the car.</string>
     <string name="guide_optional">OPTIONAL</string>
     <string name="guide_already_allowed">Already allowed.</string>
@@ -61,7 +61,7 @@
     <string name="guide_back">Back</string>
 
     <!-- Usage notes -->
-    <string name="usage_intro">Turn this on, and Gearslip sends a short note when you open it and after each drive. &lt;b&gt;The note holds no name, account, or location. A random number counts your phone once, and the server keeps no IP address.&lt;/b&gt; The notes show which cars work and where the others fail.</string>
+    <string name="usage_intro">Turn this on, and Dashline sends a short note when you open it and after each drive. &lt;b&gt;The note holds no name, account, or location. A random number counts your phone once, and the server keeps no IP address.&lt;/b&gt; The notes show which cars work and where the others fail.</string>
     <string name="usage_send">Send usage notes</string>
     <string name="usage_also_share">Also share</string>
     <string name="usage_share_android">Android version and system</string>
@@ -75,8 +75,8 @@
     <string name="usage_example">Example, not sent: one drive adds this to \"sessions\"</string>
     <string name="usage_no_server">This build has no stats server, so it sends nothing</string>
     <string name="usage_debug_build">Debug build: notes are kept apart and never counted in the stats</string>
-    <string name="worked_title">Gearslip worked with your %1$s</string>
-    <string name="worked_title_unknown">Gearslip worked with your car</string>
+    <string name="worked_title">Dashline worked with your %1$s</string>
+    <string name="worked_title_unknown">Dashline worked with your car</string>
     <string name="worked_body">Share that so the next driver knows it works? No name, account, or location.</string>
     <string name="worked_not_now">Not now</string>
     <string name="worked_share">Share</string>
@@ -84,7 +84,7 @@
 
 
     <!-- Recommended apps -->
-    <string name="recommended_intro">These free apps run on Gearslip\'s car screen. Each button opens the app\'s page on GitHub.</string>
+    <string name="recommended_intro">These free apps run on Dashline\'s car screen. Each button opens the app\'s page on GitHub.</string>
     <string name="recommended_title">Recommended apps</string>
     <string name="back">Back</string>
     <string name="recommended_installed">Installed</string>
@@ -97,11 +97,11 @@
     <string name="recommended_about_ytm">A YouTube Music player.</string>
     <string name="recommended_about_antennapod">Podcasts, chapters and all.</string>
     <string name="recommended_about_rfsentinel">Spots trackers and cameras nearby.</string>
-    <!-- The mark on apps that declare they work with Gearslip, and the list's heading for them. -->
-    <string name="works_with_gearslip">Works with Gearslip</string>
+    <!-- The mark on apps that declare they work with Dashline, and the list's heading for them. -->
+    <string name="works_with_gearslip">Works with Dashline</string>
     <!-- One app's page, opened from Recommended apps. %1$s is the app's name. -->
-    <string name="app_page_on_car">Gearslip shows it on the car screen.</string>
-    <string name="app_page_get_hint">Install it, and Gearslip shows it on the car screen.</string>
+    <string name="app_page_on_car">Dashline shows it on the car screen.</string>
+    <string name="app_page_get_hint">Install it, and Dashline shows it on the car screen.</string>
     <string name="app_page_open">Open %1$s</string>
     <string name="app_page_get">Get %1$s</string>
     <string name="app_page_github">View on GitHub</string>
@@ -110,16 +110,16 @@
     <string name="settings_title">Settings</string>
     <string name="settings_whats_new">What\'s new</string>
     <string name="settings_whats_new_sub">Read the %1$s release notes on GitHub</string>
-    <string name="settings_support">Support Gearslip</string>
-    <string name="settings_support_footer">Gearslip is free, with no ads and no tracking. Your support keeps it going.</string>
+    <string name="settings_support">Support Dashline</string>
+    <string name="settings_support_footer">Dashline is free, with no ads and no tracking. Your support keeps it going.</string>
     <string name="settings_usage_notes">Usage notes</string>
     <string name="settings_updates">Updates</string>
     <string name="settings_about">About</string>
     <string name="settings_replay">Replay the setup guide</string>
     <string name="settings_replay_sub">Go through the first-run steps again</string>
     <string name="settings_connection">Connection</string>
-    <string name="settings_use_in_car">Use Gearslip in the car</string>
-    <string name="settings_use_in_car_on">Gearslip answers when you plug into a car</string>
+    <string name="settings_use_in_car">Use Dashline in the car</string>
+    <string name="settings_use_in_car_on">Dashline answers when you plug into a car</string>
     <string name="settings_use_in_car_off">Off: Android Auto can take the connection instead</string>
     <string name="settings_apps">Apps</string>
     <string name="settings_certificate">Certificate</string>
@@ -186,7 +186,7 @@
     <string name="choice_open_home">Home</string>
     <string name="summary_player_left">Player on the left</string>
     <string name="summary_player_right">Player on the right</string>
-    <string name="summary_usb_audio">Audio through Gearslip</string>
+    <string name="summary_usb_audio">Audio through Dashline</string>
     <string name="summary_bluetooth_audio">Bluetooth audio</string>
     <string name="summary_directions_on">Directions on</string>
     <string name="summary_directions_off">Directions off</string>
@@ -240,7 +240,7 @@
     <string name="car_audio">Car audio</string>
     <string name="car_audio_bt">Bluetooth (Recommended)</string>
     <string name="car_audio_bt_sub">No prompt each drive, and your map app\'s voice reaches the car</string>
-    <string name="car_audio_usb_sub">Clearer sound with no delay, but map apps\' spoken directions play on the phone, not in the car. Each drive, Android asks you to share your screen, which lets Gearslip send the sound</string>
+    <string name="car_audio_usb_sub">Clearer sound with no delay, but map apps\' spoken directions play on the phone, not in the car. Each drive, Android asks you to share your screen, which lets Dashline send the sound</string>
     <string name="car_audio_usb_footer">Run the command in Help once, and Android stops asking.</string>
     <string name="car_audio_bt_footer">Calls go over Bluetooth either way.</string>
 
@@ -250,7 +250,7 @@
     <string name="screen_preview_size">Preview size</string>
     <string name="screen_preview_note">The size the car preview draws at, such as 1920x720.</string>
     <string name="screen_car_screen">Car screen</string>
-    <string name="screen_footer">Gearslip uses the size the car reports unless you set one.</string>
+    <string name="screen_footer">Dashline uses the size the car reports unless you set one.</string>
     <string name="screen_size">Screen size</string>
     <string name="screen_from_car">From the car</string>
     <string name="screen_crop">Crop the edges</string>
@@ -261,7 +261,7 @@
     <string name="screen_last_car">Last car</string>
     <string name="screen_last_car_sub">The size of the last car you connected to</string>
     <string name="screen_this_screen">This screen</string>
-    <string name="screen_this_screen_sub">Fills this device\'s screen, for a head unit running Gearslip itself</string>
+    <string name="screen_this_screen_sub">Fills this device\'s screen, for a head unit running Dashline itself</string>
     <string name="screen_custom">Custom</string>
     <string name="screen_enter_size">Enter a size</string>
     <string name="screen_change_custom">Change the custom size</string>
@@ -279,30 +279,30 @@
     <string name="help_full_list">See the full list</string>
     <string name="help_first_drive">Before your first drive</string>
     <string name="help_in_car">In the car</string>
-    <string name="help_usb_audio">Audio through Gearslip</string>
+    <string name="help_usb_audio">Audio through Dashline</string>
 
     <!--  -->
     <string name="help_aa_off">Turn off Android Auto.</string>
-    <string name="help_aa_off_detail">Disable or uninstall the Android Auto app, so the car talks to Gearslip instead.</string>
+    <string name="help_aa_off_detail">Disable or uninstall the Android Auto app, so the car talks to Dashline instead.</string>
     <string name="help_cert">Load a certificate.</string>
     <string name="help_cert_detail">In Settings, download the aasdk certificate, which most cars accept. If your car rejects it, import your own instead.</string>
     <string name="help_mic">Allow the microphone.</string>
-    <string name="help_mic_detail">Android won\'t let an app pass music to the car without it. Gearslip listens only when you tap the mic or press the talk button on your wheel.</string>
+    <string name="help_mic_detail">Android won\'t let an app pass music to the car without it. Dashline listens only when you tap the mic or press the talk button on your wheel.</string>
     <string name="help_plug_in">Plug in, or connect wirelessly.</string>
-    <string name="help_plug_in_detail">Gearslip opens by itself when the car connects. For wireless, pair the phone with the car first, then tap Connect wirelessly on Home.</string>
+    <string name="help_plug_in_detail">Dashline opens by itself when the car connects. For wireless, pair the phone with the car first, then tap Connect wirelessly on Home.</string>
     <string name="help_usb_data">Allow USB data.</string>
     <string name="help_usb_data_detail">GrapheneOS can block data on the USB port. If USB-C port control is set to Charging-only, the car never sees the phone, even with a data cable. Set it to allow data.</string>
     <string name="help_pair">Pair over Bluetooth for calls.</string>
-    <string name="help_pair_detail">Calls play through the car once your phone and the car are paired. Gearslip offers to pair the first time you plug in.</string>
+    <string name="help_pair_detail">Calls play through the car once your phone and the car are paired. Dashline offers to pair the first time you plug in.</string>
     <string name="help_bluetooth_first">Connect Bluetooth before the cable.</string>
     <string name="help_bluetooth_first_detail">If music over Bluetooth won\'t connect, let the car find the phone over Bluetooth first, then plug in. Some cars get confused when the cable comes first.</string>
     <string name="help_answer">Answer calls from the car screen.</string>
-    <string name="help_answer_detail">Set Gearslip as your caller ID and spam app. Without it, calls still ring, but only the phone can answer them.</string>
+    <string name="help_answer_detail">Set Dashline as your caller ID and spam app. Without it, calls still ring, but only the phone can answer them.</string>
     <string name="help_prompt">Stop the audio prompt each drive.</string>
     <string name="help_prompt_detail">Connect the phone to a computer with USB debugging on, and run this once. Skip it and you tap Start each time you set off.</string>
     <string name="help_readable">Keep notifications readable.</string>
-    <string name="help_readable_detail">Android hides what notifications say while it shares audio. Run this too, and Gearslip lifts that only while music goes to the car.</string>
-    <string name="help_which_cars_body">Most cars accept the aasdk certificate. Starting around 2020, some cars added newer security checks that reject it, and in those cars Gearslip needs a certificate of your own.</string>
+    <string name="help_readable_detail">Android hides what notifications say while it shares audio. Run this too, and Dashline lifts that only while music goes to the car.</string>
+    <string name="help_which_cars_body">Most cars accept the aasdk certificate. Starting around 2020, some cars added newer security checks that reject it, and in those cars Dashline needs a certificate of your own.</string>
 
     <!-- Updates -->
     <string name="update_downloaded_ask">Downloaded. Android asks before it installs.</string>
@@ -318,15 +318,15 @@
     <string name="update_once_a_day">Once a day</string>
     <string name="update_silent">Install updates by itself</string>
     <string name="update_silent_sub">Finished releases only, on Wi-Fi, when no car is connected</string>
-    <string name="update_installed_title">Gearslip updated to %1$s</string>
+    <string name="update_installed_title">Dashline updated to %1$s</string>
     <string name="update_installed_text">Installed on Wi-Fi while no car was connected.</string>
 
     <!--  -->
-    <string name="update_unplug_first">Unplug from the car to install. Installing closes Gearslip.</string>
-    <string name="update_card_title">Gearslip %1$s is out</string>
+    <string name="update_unplug_first">Unplug from the car to install. Installing closes Dashline.</string>
+    <string name="update_card_title">Dashline %1$s is out</string>
     <string name="update_downloading">Downloading… %1$d%%</string>
     <string name="update_debug_manual">Debug builds check only when you tap Check now</string>
-    <string name="update_checks_daily">Gearslip checks once a day</string>
+    <string name="update_checks_daily">Dashline checks once a day</string>
     <string name="update_version_out">Version %1$s is out</string>
     <string name="update_version_ready">Version %1$s is ready to install</string>
     <string name="update_dialog_status">Version %1$s. %2$s.</string>
@@ -343,13 +343,13 @@
     <string name="about_copy_address">Copy address</string>
     <string name="close">Close</string>
     <string name="about_matrix">Join the chat on Matrix</string>
-    <string name="about_matrix_sub">Talk with other drivers about cars, apps, and Gearslip</string>
-    <string name="about_translate">Help translate Gearslip</string>
+    <string name="about_matrix_sub">Talk with other drivers about cars, apps, and Dashline</string>
+    <string name="about_translate">Help translate Dashline</string>
     <string name="about_translate_sub">Fix or add your language on Weblate. Some translations started as machine translations.</string>
     <string name="privacy_policy">Privacy policy</string>
-    <string name="privacy_policy_sub">What Gearslip sends, to whom, and why</string>
+    <string name="privacy_policy_sub">What Dashline sends, to whom, and why</string>
     <string name="about_source">Source code</string>
-    <string name="about_source_sub">Read or change Gearslip\'s code under the AGPL</string>
+    <string name="about_source_sub">Read or change Dashline\'s code under the AGPL</string>
     <string name="about_voice_credits">Voice credits</string>
 
     <!--  -->
@@ -368,11 +368,11 @@
 
     <!--  -->
     <string name="certsetup_loaded">Cars accept only Google-issued certificates, and you have one loaded.</string>
-    <string name="certsetup_choose">Cars accept only Google-issued certificates. Gearslip doesn\'t include one, so choose where yours comes from.</string>
+    <string name="certsetup_choose">Cars accept only Google-issued certificates. Dashline doesn\'t include one, so choose where yours comes from.</string>
     <string name="certsetup_aasdk_sub">The open-source aasdk project publishes this certificate at github.com/opencardev/aasdk. Most cars accept it. Some from around 2020 on reject it, and then you need to import your own.</string>
 
     <!-- Storage -->
-    <string name="storage_title">Gearslip storage</string>
+    <string name="storage_title">Dashline storage</string>
     <string name="storage_measuring">Measuring…</string>
     <string name="storage_lyrics">Lyrics</string>
     <string name="storage_clear">Clear</string>
@@ -380,18 +380,18 @@
     <string name="storage_remove">Remove</string>
     <string name="storage_logs">Old logs</string>
     <string name="storage_other">Other temporary files</string>
-    <string name="storage_delete_all">Delete all Gearslip data</string>
+    <string name="storage_delete_all">Delete all Dashline data</string>
 
     <!--  -->
-    <string name="storage_total">Gearslip\'s data takes %1$s of the phone\'s storage.</string>
+    <string name="storage_total">Dashline\'s data takes %1$s of the phone\'s storage.</string>
     <plurals name="storage_lyrics_detail">
         <item quantity="one">%1$d song · %2$s. Cleared lyrics download again when you open them.</item>
         <item quantity="other">%1$d songs · %2$s. Cleared lyrics download again when you open them.</item>
     </plurals>
     <string name="storage_voice_detail">%1$s. Voice commands need them; download them again in Settings.</string>
     <string name="storage_logs_detail">%1$s. Logs from earlier launches; this launch\'s log stays.</string>
-    <string name="storage_other_detail">%1$s. Downloaded updates and other files Gearslip can make again.</string>
-    <string name="storage_delete_armed">Tap Delete again to erase settings, certificates, voice models and logs. Gearslip closes, and starts from setup next time.</string>
+    <string name="storage_other_detail">%1$s. Downloaded updates and other files Dashline can make again.</string>
+    <string name="storage_delete_armed">Tap Delete again to erase settings, certificates, voice models and logs. Dashline closes, and starts from setup next time.</string>
     <string name="storage_delete_sub">Settings, certificates, voice models, lyrics and logs.</string>
     <string name="storage_delete">Delete</string>
     <string name="storage_delete_ellipsis">Delete…</string>
@@ -403,10 +403,10 @@
     <string name="donate_card">Give once by card</string>
 
     <!--  -->
-    <string name="donate_body">Gearslip is free, with no ads and no tracking. If it gets you on the road, your support keeps it going.</string>
+    <string name="donate_body">Dashline is free, with no ads and no tracking. If it gets you on the road, your support keeps it going.</string>
 
     <!-- Wireless -->
-    <string name="wireless_needs_permission">Gearslip needs Bluetooth and nearby Wi-Fi access for this.</string>
+    <string name="wireless_needs_permission">Dashline needs Bluetooth and nearby Wi-Fi access for this.</string>
     <string name="wireless_enable_permission">Enable Nearby devices permission</string>
     <string name="wireless_connect">Connect wirelessly</string>
     <string name="wireless_which_car">Which car?</string>
@@ -443,7 +443,7 @@
     <string name="home_debug_build">%1$s · debug build</string>
     <string name="home_bt_body">Music plays over Bluetooth, but your phone isn\'t connected to the car. Connect it here or from the car\'s Bluetooth menu.</string>
     <string name="home_location_title">Keep the car\'s map on GPS</string>
-    <string name="home_location_body">With the phone locked, Android stops passing your location to the car\'s map. Choose Allow all the time, and Gearslip keeps it going. It reads your location in the background only while a car is connected.</string>
+    <string name="home_location_body">With the phone locked, Android stops passing your location to the car\'s map. Choose Allow all the time, and Dashline keeps it going. It reads your location in the background only while a car is connected.</string>
     <string name="home_location_allow">Allow location</string>
     <string name="home_location_not_now">Not now</string>
     <string name="home_voice_downloading">Downloading voice, %1$d%%</string>
@@ -457,9 +457,9 @@
     <string name="audio_open_settings">Open app settings</string>
 
     <!--  -->
-    <string name="audio_bt_body">Android treats the music Gearslip sends to the car like sharing your screen, so it asks every drive, over a cable or wireless. Over Bluetooth it never asks. You can change this later in Settings.</string>
-    <string name="audio_keep_usb">Or keep the sound going through Gearslip and stop the question for good: plug the phone into a computer with USB debugging on, and run this once.</string>
-    <string name="audio_mic_body">Android lets an app send other apps\' sound to the car only if it has the microphone permission. It\'s turned off for Gearslip, so music plays on the phone. Turn it on under Permissions, then Microphone.</string>
+    <string name="audio_bt_body">Android treats the music Dashline sends to the car like sharing your screen, so it asks every drive, over a cable or wireless. Over Bluetooth it never asks. You can change this later in Settings.</string>
+    <string name="audio_keep_usb">Or keep the sound going through Dashline and stop the question for good: plug the phone into a computer with USB debugging on, and run this once.</string>
+    <string name="audio_mic_body">Android lets an app send other apps\' sound to the car only if it has the microphone permission. It\'s turned off for Dashline, so music plays on the phone. Turn it on under Permissions, then Microphone.</string>
 
     <!-- Phone keyboard -->
     <string name="typing_close">Close the car keyboard</string>
@@ -501,11 +501,11 @@
     <string name="carset_no_profile">No vehicle profile matched</string>
 
     <!--  -->
-    <string name="carset_audio_note">Through Gearslip sends the phone\'s sound over the car connection, cable or wireless. Android asks to share your screen each drive, and a few apps block it. Bluetooth plays as the phone normally would, and Android never asks.</string>
+    <string name="carset_audio_note">Through Dashline sends the phone\'s sound over the car connection, cable or wireless. Android asks to share your screen each drive, and a few apps block it. Bluetooth plays as the phone normally would, and Android never asks.</string>
     <string name="car_directions_over_music">Directions over the music channel</string>
-    <string name="car_directions_over_music_note">For a car that drops the connection or restarts after a spoken turn. Gearslip mixes each turn into the music instead of using the car\'s directions channel.</string>
-    <string name="carset_directions_note">Gearslip reads each turn aloud through the car\'s speakers, and the music dips while it speaks. Turn it off if your map app\'s own voice already plays in the car.</string>
-    <string name="carset_phone_speech_note">Listens through the phone\'s own speech service instead of Gearslip\'s. On most phones that\'s Google\'s, which may send your voice to Google. GrapheneOS has none, so Gearslip keeps using its own.</string>
+    <string name="car_directions_over_music_note">For a car that drops the connection or restarts after a spoken turn. Dashline mixes each turn into the music instead of using the car\'s directions channel.</string>
+    <string name="carset_directions_note">Dashline reads each turn aloud through the car\'s speakers, and the music dips while it speaks. Turn it off if your map app\'s own voice already plays in the car.</string>
+    <string name="carset_phone_speech_note">Listens through the phone\'s own speech service instead of Dashline\'s. On most phones that\'s Google\'s, which may send your voice to Google. GrapheneOS has none, so Dashline keeps using its own.</string>
     <string name="carset_vehicle_data_note">Adds a Vehicle data tile: a live, raw dump of the head unit\'s sensor channel. Field labels (speed, RPM, fuel...) are carried over from other reverse-engineering projects and unverified against this car - treat them as a guess, not a fact, until you\'ve watched one change for yourself.</string>
     <string name="carset_adaptive_note">Lowers the picture\'s quality when the car, or its Wi-Fi, can\'t keep up, and raises it again once it can. Takes effect on the next connection.</string>
     <string name="carset_usable_height">Usable height %1$dpx of 480</string>
@@ -525,11 +525,11 @@
 
     <!--  -->
     <string name="media_keeps_library">%1$s keeps its library to itself.</string>
-    <string name="media_needs_access">Gearslip can still play it once it has Notification access. Allow it on the phone when you\'re parked.</string>
+    <string name="media_needs_access">Dashline can still play it once it has Notification access. Allow it on the phone when you\'re parked.</string>
     <string name="media_not_running">%1$s isn\'t running.</string>
-    <string name="media_not_running_body">%1$s plays through Gearslip\'s own player, but only while it\'s open on the phone. Open it once and it keeps playing here in the car.</string>
+    <string name="media_not_running_body">%1$s plays through Dashline\'s own player, but only while it\'s open on the phone. Open it once and it keeps playing here in the car.</string>
     <string name="media_open_app">Open %1$s</string>
-    <string name="media_refused">%1$s would not let Gearslip browse it.</string>
+    <string name="media_refused">%1$s would not let Dashline browse it.</string>
     <string name="media_refused_body">Some media apps only accept Google\'s own host.</string>
     <string name="media_connecting">Connecting to %1$s…</string>
     <string name="media_search">Search %1$s</string>
@@ -552,8 +552,8 @@
     <string name="media_play">Play</string>
 
     <!--  -->
-    <string name="media_queue_empty_idle">Nothing playing - not every app tells Gearslip what comes next.</string>
-    <string name="media_queue_empty_playing">Only what\'s already playing - not every app tells Gearslip what comes next.</string>
+    <string name="media_queue_empty_idle">Nothing playing - not every app tells Dashline what comes next.</string>
+    <string name="media_queue_empty_playing">Only what\'s already playing - not every app tells Dashline what comes next.</string>
 
     <!-- Player controls -->
     <string name="player_previous">Previous</string>
@@ -652,7 +652,7 @@
 
     <!-- Weather -->
     <string name="weather_waiting_fix">Waiting for a location fix.</string>
-    <string name="weather_allow_location">Allow location for Gearslip on the phone to see the weather.</string>
+    <string name="weather_allow_location">Allow location for Dashline on the phone to see the weather.</string>
     <string name="weather_unreachable">Could not reach the weather service.</string>
     <string name="weather_clear">Clear</string>
     <string name="weather_mostly_clear">Mostly clear</string>
@@ -696,14 +696,14 @@
     <string name="dialer_enter_number">Enter a number</string>
     <string name="dialer_call">Call</string>
     <string name="dialer_no_recents">No recent calls.</string>
-    <string name="dialer_recents_needs_permission">Gearslip needs the Call logs permission to list recent calls.</string>
+    <string name="dialer_recents_needs_permission">Dashline needs the Call logs permission to list recent calls.</string>
     <!-- %1$s is how long ago, such as "5 min. ago" -->
     <string name="dialer_missed">Missed · %1$s</string>
     <string name="dialer_no_contacts">No contacts with a phone number found.</string>
     <string name="dialer_search">Search contacts</string>
 
     <!--  -->
-    <string name="dialer_needs_permission">Gearslip needs the Phone and Contacts permissions to dial from here. Allow them on the phone when you\'re parked.</string>
+    <string name="dialer_needs_permission">Dashline needs the Phone and Contacts permissions to dial from here. Allow them on the phone when you\'re parked.</string>
     <string name="dialer_no_match">No contacts match \"%1$s\".</string>
     <string name="dialer_call_who">Call %1$s?</string>
 
@@ -713,10 +713,10 @@
     <string name="carui_understand">I understand</string>
 
     <!--  -->
-    <string name="carui_unofficial">Gearslip is unofficial software: it is not made or reviewed by any carmaker, and it can fail without warning.</string>
+    <string name="carui_unofficial">Dashline is unofficial software: it is not made or reviewed by any carmaker, and it can fail without warning.</string>
     <string name="carui_never_interact">Never interact with this screen while driving. Set the route or the song before you go, then keep your attention on the road.</string>
     <string name="carui_this_app">This app</string>
-    <string name="carui_app_unsupported">%1$s doesn\'t work with Gearslip yet.</string>
+    <string name="carui_app_unsupported">%1$s doesn\'t work with Dashline yet.</string>
     <string name="carui_app_unsupported_body">It didn\'t start. Some apps only run on Google\'s Android Auto.</string>
 
     <!-- Nav bar -->
@@ -740,7 +740,7 @@
     <string name="notif_title">Notifications</string>
     <string name="notif_clear_all">Clear all</string>
     <string name="notif_empty">Nothing yet. New notifications from the phone will show up here.</string>
-    <string name="notif_off">Gearslip needs Notification access to show them here. Allow it on the phone when you\'re parked.</string>
+    <string name="notif_off">Dashline needs Notification access to show them here. Allow it on the phone when you\'re parked.</string>
     <string name="notif_replied">Replied</string>
 
     <!-- Messages -->
@@ -802,7 +802,7 @@
     <string name="call_ringing">Already ringing out loud - answer here, or let it ring.</string>
 
     <!-- Screen sharing -->
-    <string name="phoneapps_touch_off">Touch is off. Enable Gearslip under Settings &gt; Accessibility on the phone.</string>
+    <string name="phoneapps_touch_off">Touch is off. Enable Dashline under Settings &gt; Accessibility on the phone.</string>
 
     <!-- What's new in the car -->
     <string name="whatsnew_show_after">Show after updates</string>
@@ -817,7 +817,7 @@
     <string name="keyboard_submit">Submit</string>
 
     <!-- Launcher -->
-    <string name="launcher_broken">Doesn\'t work with Gearslip</string>
+    <string name="launcher_broken">Doesn\'t work with Dashline</string>
 
     <!-- Car app stage -->
     <string name="stage_car_app">Car app</string>
@@ -919,36 +919,36 @@
 
     <!-- Cluster screen -->
     <string name="car_cluster_video">Turn card on the cluster screen</string>
-    <string name="car_cluster_video_note">For a car with a second screen in the instrument cluster: Gearslip shows the next turn there. Applies on the next connection.</string>
+    <string name="car_cluster_video_note">For a car with a second screen in the instrument cluster: Dashline shows the next turn there. Applies on the next connection.</string>
 
     <!-- Connection status on Home -->
     <string name="status_idle">Not connected</string>
-    <string name="status_idle_detail">Plug into the car\'s USB port, or connect wirelessly. Gearslip opens by itself when the car answers.</string>
+    <string name="status_idle_detail">Plug into the car\'s USB port, or connect wirelessly. Dashline opens by itself when the car answers.</string>
     <string name="status_no_car">The phone is charging, but no car has answered. Some cables only charge; try one that carries data.</string>
     <string name="status_no_car_graphene">The phone is charging, but no car has answered. Check that USB-C port control, under Security &amp; privacy, allows data and isn\'t set to Charging-only.</string>
-    <string name="status_stuck_cable">The car hasn\'t shown Gearslip yet. Unplug the cable, wait a few seconds, and plug it back in. If it keeps happening, try another cable or USB port, and share the log in an issue.</string>
-    <string name="status_stuck_wireless">The car hasn\'t shown Gearslip yet. Turn the car off and on again, or connect with a cable. If it keeps happening, share the log in an issue.</string>
-    <string name="car_audio_switched">This car turns Bluetooth music off while Gearslip runs, so its music now goes through Gearslip. Allow the prompt on your phone.</string>
-    <string name="car_audio_blocked">%1$s doesn\'t let other apps play its sound, so it can\'t reach the car through Gearslip. Try another music app.</string>
+    <string name="status_stuck_cable">The car hasn\'t shown Dashline yet. Unplug the cable, wait a few seconds, and plug it back in. If it keeps happening, try another cable or USB port, and share the log in an issue.</string>
+    <string name="status_stuck_wireless">The car hasn\'t shown Dashline yet. Turn the car off and on again, or connect with a cable. If it keeps happening, share the log in an issue.</string>
+    <string name="car_audio_switched">This car turns Bluetooth music off while Dashline runs, so its music now goes through Dashline. Allow the prompt on your phone.</string>
+    <string name="car_audio_blocked">%1$s doesn\'t let other apps play its sound, so it can\'t reach the car through Dashline. Try another music app.</string>
     <string name="bt_address_card_title">Help %1$s know this phone</string>
     <string name="bt_address_card_body">Some cars stay connected only once they know the phone\'s Bluetooth address. Android keeps it from apps, so copy it from About phone. Press and hold the Bluetooth address there, tap Copy, and come back.</string>
     <string name="bt_address_open">Open About phone</string>
     <string name="bt_address_not_now">Not now</string>
     <string name="bt_address_use_title">Use this Bluetooth address?</string>
-    <string name="bt_address_use_body">Gearslip passes it to your car, so the car knows this is the phone it\'s paired with.</string>
+    <string name="bt_address_use_body">Dashline passes it to your car, so the car knows this is the phone it\'s paired with.</string>
     <string name="bt_address_type">Type it instead</string>
     <string name="bt_address_your_car">your car</string>
     <string name="bt_address_car_note">Finish one setup step on your phone when you\'re parked.</string>
     <string name="settings_bt_address">Phone\'s Bluetooth address</string>
-    <string name="settings_bt_address_off">Not set. Only for a car that drops Bluetooth when Gearslip connects.</string>
-    <string name="settings_bt_address_hint">Copy it from Android\'s Settings, under About phone. Gearslip passes it to the car, so the car knows the phone on the cable is the one it\'s paired with.</string>
+    <string name="settings_bt_address_off">Not set. Only for a car that drops Bluetooth when Dashline connects.</string>
+    <string name="settings_bt_address_hint">Copy it from Android\'s Settings, under About phone. Dashline passes it to the car, so the car knows the phone on the cable is the one it\'s paired with.</string>
     <string name="settings_bt_address_invalid">That isn\'t a Bluetooth address. It looks like 12:34:56:78:9A:BC.</string>
     <string name="settings_use_as_launcher">Use as launcher</string>
-    <string name="settings_use_as_launcher_off">For a head unit or a tablet on the dash. Gearslip\'s car screen becomes this device\'s home screen.</string>
-    <string name="settings_use_as_launcher_on">Gearslip can be this device\'s home screen. Pick it under Default home app.</string>
+    <string name="settings_use_as_launcher_off">For a head unit or a tablet on the dash. Dashline\'s car screen becomes this device\'s home screen.</string>
+    <string name="settings_use_as_launcher_on">Dashline can be this device\'s home screen. Pick it under Default home app.</string>
     <string name="app_all_apps">All apps</string>
-    <string name="launcher_in_car">This device is connected to a car, so Gearslip is on the car\'s screen.</string>
-    <string name="launcher_open_gearslip">Open Gearslip</string>
+    <string name="launcher_in_car">This device is connected to a car, so Dashline is on the car\'s screen.</string>
+    <string name="launcher_open_gearslip">Open Dashline</string>
     <string name="status_open_settings">Open settings</string>
     <string name="status_connecting">Connecting</string>
     <string name="status_projecting">Projecting</string>
@@ -957,7 +957,7 @@
     <string name="status_disconnected_detail">The head unit is no longer connected.</string>
     <string name="places_title">Saved places</string>
     <string name="places_sub">Say “navigate home” in any map app</string>
-    <string name="places_intro">Say “navigate home”, “take me to work” or “navigate to” a name of your own, and Gearslip sends that address to your map app.</string>
+    <string name="places_intro">Say “navigate home”, “take me to work” or “navigate to” a name of your own, and Dashline sends that address to your map app.</string>
     <string name="places_home">Home</string>
     <string name="places_work">Work</string>
     <string name="places_other">Place %1$d</string>
@@ -965,7 +965,7 @@
     <string name="places_address">Address</string>
     <string name="places_here">Use where I am</string>
     <string name="places_finding">Finding you…</string>
-    <string name="places_not_found">Gearslip couldn’t find where you are. Check that location is on.</string>
+    <string name="places_not_found">Dashline couldn’t find where you are. Check that location is on.</string>
     <string name="places_clear">Clear</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_phone">Same as the phone</string>
@@ -982,7 +982,7 @@
     <string name="web_remove_this_bookmark">Remove from the start page</string>
     <string name="browser_search_engine">Search engine</string>
     <string name="browser_bookmarks">Bookmarks</string>
-    <string name="browser_bookmarks_note">Shown as tiles on the browser\'s start page. You can also share a page to Gearslip from any browser.</string>
+    <string name="browser_bookmarks_note">Shown as tiles on the browser\'s start page. You can also share a page to Dashline from any browser.</string>
     <string name="browser_add_bookmark">Add bookmark</string>
     <string name="browser_bookmark_name">Name</string>
     <string name="browser_bookmark_address">Web address</string>
@@ -997,18 +997,18 @@
     <string name="browser_list_note">Any list in Adblock Plus format, such as one for your language or region.</string>
     <string name="browser_update_lists">Update lists now</string>
     <string name="browser_lists_status">%1$d rules, updated %2$s</string>
-    <string name="browser_lists_never">%1$d rules, from the copy built into Gearslip</string>
+    <string name="browser_lists_never">%1$d rules, from the copy built into Dashline</string>
     <string name="browser_updating">Updating…</string>
     <string name="browser_update_failed">Couldn\'t update. %1$s</string>
-    <string name="browser_shared_added">Added to Gearslip\'s start page</string>
+    <string name="browser_shared_added">Added to Dashline\'s start page</string>
     <string name="browser_shared_not_url">That isn\'t a web address</string>
-    <string name="browser_share_label">Gearslip start page</string>
+    <string name="browser_share_label">Dashline start page</string>
     <string name="summary_adblock_on">Ads blocked</string>
     <string name="summary_adblock_off">Ads not blocked</string>
     <string name="car_nav_mic">Mic button</string>
     <string name="car_nav_mic_note">The assistant\'s button in the nav bar. The car\'s own voice button works either way.</string>
     <string name="car_apps_add">Add an app</string>
-    <string name="car_apps_add_note">For an app the car doesn\'t list: its music plays through Gearslip\'s player, or its messages show on the Messages screen.</string>
+    <string name="car_apps_add_note">For an app the car doesn\'t list: its music plays through Dashline\'s player, or its messages show on the Messages screen.</string>
     <string name="car_apps_add_pick">Choose an app</string>
     <string name="car_apps_add_as">Show %1$s as</string>
     <string name="car_apps_as_media">Music and audio</string>
@@ -1020,7 +1020,7 @@
     <string name="cert_link">Download from a link</string>
     <string name="cert_link_sub">A certificate file you trust, at an address you paste</string>
     <string name="cert_link_title">Certificate from a link</string>
-    <string name="cert_link_note">Paste the address of a .p12 file, or of a certificate and key in PEM or DER. Gearslip converts it to the form the car needs.</string>
+    <string name="cert_link_note">Paste the address of a .p12 file, or of a certificate and key in PEM or DER. Dashline converts it to the form the car needs.</string>
     <string name="cert_link_label">Certificate or .p12 link</string>
     <string name="cert_link_key">Link to the private key</string>
     <string name="cert_link_key_note">That\'s a certificate without its key. Paste the key\'s link too.</string>

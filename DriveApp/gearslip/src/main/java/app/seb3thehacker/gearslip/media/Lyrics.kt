@@ -419,7 +419,7 @@ object Lyrics {
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             connectTimeout = 5_000
             readTimeout = 8_000
-            setRequestProperty("User-Agent", "Gearslip (car media host)")
+            setRequestProperty("User-Agent", "Dashline (car media host)")
             setRequestProperty("Accept", "application/json")
         }
         return try {

@@ -7,7 +7,7 @@ import android.widget.Toast
 import app.seb3thehacker.gearslip.R
 
 /**
- * The "Add to Gearslip" entry in Android's share sheet. A page shared from any browser becomes a
+ * The "Add to Dashline" entry in Android's share sheet. A page shared from any browser becomes a
  * tile on the car browser's start page, so nobody has to type an address on the car's keyboard.
  * It shows nothing of its own: a toast says whether it worked, and it closes.
  */

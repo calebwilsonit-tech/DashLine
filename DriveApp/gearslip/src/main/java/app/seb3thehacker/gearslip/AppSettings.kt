@@ -67,7 +67,7 @@ object AppSettings {
     /**
      * Makes the USB alias match the saved switch. Called at every launch as well, so a switch
      * saved without the alias following it (an older build crashed right there) heals itself.
-     * Only the alias changes: the driver's "always open with Gearslip" choice for the car is kept.
+     * Only the alias changes: the driver's "always open with Dashline" choice for the car is kept.
      */
     fun applyGearslipEnabled(context: Context) {
         val value = gearslipEnabled(context)

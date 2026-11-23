@@ -216,7 +216,7 @@
         <activity
             android:name=".ui.ManageSpaceActivity"
             android:exported="true"
-            android:label="Gearslip storage" />
+            android:label="Dashline storage" />
 
         <activity
             android:name=".PermissionActivity"
@@ -283,7 +283,7 @@
         <service
             android:name=".mirror.TouchRelayService"
             android:exported="true"
-            android:label="Gearslip car touch"
+            android:label="Dashline car touch"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
@@ -300,7 +300,7 @@
         <service
             android:name=".notify.GearslipNotificationListener"
             android:exported="true"
-            android:label="Gearslip notifications"
+            android:label="Dashline notifications"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
@@ -316,7 +316,7 @@
         <service
             android:name=".call.GearslipCallScreening"
             android:exported="true"
-            android:label="Gearslip calls"
+            android:label="Dashline calls"
             android:permission="android.permission.BIND_SCREENING_SERVICE">
             <intent-filter>
                 <action android:name="android.telecom.CallScreeningService" />

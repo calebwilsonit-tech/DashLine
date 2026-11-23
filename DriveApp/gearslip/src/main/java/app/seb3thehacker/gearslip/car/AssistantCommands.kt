@@ -149,7 +149,7 @@ object AssistantCommands {
                 else -> saved.label
             }
             if (saved.address.isBlank()) {
-                return "You haven't saved a $name address yet. Add it under Saved places in Gearslip's settings on your phone."
+                return "You haven't saved a $name address yet. Add it under Saved places in Dashline's settings on your phone."
             }
             destination = saved.address
             spoken = if (slot == SavedPlaces.HOME) "home" else "to $name"
@@ -321,7 +321,7 @@ object AssistantCommands {
                 ?: return null
             ).replace(Regex(" (?:on|at) (?:their |his |her )?(?:mobile|cell|phone|home|work)$"), "").trim()
         if (name.isBlank()) return "Who should I call?"
-        if (!hasCallPermissions(context)) return "Gearslip needs the phone and contacts permissions first, from the phone screen."
+        if (!hasCallPermissions(context)) return "Dashline needs the phone and contacts permissions first, from the phone screen."
 
         val match = withContext(Dispatchers.IO) {
             loadContacts(context).firstOrNull { it.name.lowercase().contains(name) }

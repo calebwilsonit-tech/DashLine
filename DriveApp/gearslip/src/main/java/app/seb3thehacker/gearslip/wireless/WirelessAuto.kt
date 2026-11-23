@@ -58,7 +58,7 @@ object WirelessAuto {
             .addDeviceFilter(BluetoothDeviceFilter.Builder().setAddress(address).build())
             .setSingleDevice(true)
             .build()
-        log.i("auto-connect: asking Android to let Gearslip watch for ${WirelessLink.name(device)}")
+        log.i("auto-connect: asking Android to let Dashline watch for ${WirelessLink.name(device)}")
         @Suppress("DEPRECATION")
         manager.associate(request, object : CompanionDeviceManager.Callback() {
             @Deprecated("Deprecated in Java")
@@ -117,7 +117,7 @@ object WirelessAuto {
 
     /** From [CarPresenceService]: the car is here, so bring Gearslip up to connect to it. */
     fun carAppeared(context: Context, address: String) {
-        log.i("auto-connect: a car Gearslip knows connected over Bluetooth")
+        log.i("auto-connect: a car Dashline knows connected over Bluetooth")
         runCatching {
             context.startActivity(
                 Intent(context, GearslipActivity::class.java)
@@ -125,6 +125,6 @@ object WirelessAuto {
                     .putExtra(EXTRA_ADDRESS, address)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
-        }.onFailure { log.w("auto-connect: couldn't open Gearslip (${it.message})") }
+        }.onFailure { log.w("auto-connect: couldn't open Dashline (${it.message})") }
     }
 }

@@ -218,9 +218,9 @@ object UpdateChecker {
                     key = "gearslip-update",
                     id = CarNotifications.nextId(),
                     packageName = app.packageName,
-                    appLabel = "Gearslip",
-                    title = "Gearslip ${release.version} is out",
-                    text = "Update in the Gearslip app or from GitHub",
+                    appLabel = "Dashline",
+                    title = "Dashline ${release.version} is out",
+                    text = "Update in the Dashline app or from GitHub",
                     postedAt = System.currentTimeMillis(),
                     icon = runCatching { app.packageManager.getApplicationIcon(app.packageName).toBitmap(96, 96) }.getOrNull(),
                     reply = null,
@@ -239,7 +239,7 @@ object UpdateChecker {
         else -> savedRelease(app)
     }
 
-    /** Posts "Gearslip X is out"; tapping it opens the app, where the Home card has the button. */
+    /** Posts "Dashline X is out"; tapping it opens the app, where the Home card has the button. */
     private fun notify(context: Context, release: Release): Boolean {
         if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return false
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(
@@ -252,7 +252,7 @@ object UpdateChecker {
         )
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("Gearslip ${release.version} is out")
+            .setContentTitle("Dashline ${release.version} is out")
             .setContentText("Tap to update.")
             .setContentIntent(open)
             .setAutoCancel(true)
@@ -324,7 +324,7 @@ object UpdateChecker {
         flow.value = State.Downloading(release, 0f)
         Thread({
             val dir = updatesDir(app).apply { deleteRecursively(); mkdirs() }
-            val apk = File(dir, "Gearslip-${release.version}.apk")
+            val apk = File(dir, "Dashline-${release.version}.apk")
             flow.value = runCatching {
                 fetchApk(release, apk)
                 GearslipLog.i("update: downloaded ${release.version}")
@@ -470,7 +470,7 @@ object UpdateChecker {
             connectTimeout = 15_000
             readTimeout = 15_000
             setRequestProperty("Accept", "application/vnd.github+json")
-            setRequestProperty("User-Agent", "Gearslip/${BuildConfig.VERSION_NAME}")
+            setRequestProperty("User-Agent", "Dashline/${BuildConfig.VERSION_NAME}")
         }
         try {
             if (conn.responseCode == 404) return null // no stable release yet
@@ -510,7 +510,7 @@ object UpdateChecker {
         val conn = (URL(release.apkUrl).openConnection() as HttpURLConnection).apply {
             connectTimeout = 15_000
             readTimeout = 30_000
-            setRequestProperty("User-Agent", "Gearslip/${BuildConfig.VERSION_NAME}")
+            setRequestProperty("User-Agent", "Dashline/${BuildConfig.VERSION_NAME}")
         }
         try {
             if (conn.responseCode !in 200..299) error("GitHub answered ${conn.responseCode}")

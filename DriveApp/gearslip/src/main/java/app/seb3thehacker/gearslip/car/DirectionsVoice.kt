@@ -290,7 +290,7 @@ object DirectionsVoice {
             return
         }
         val wav = Wav.read(file) ?: run {
-            GearslipLog.w("guidance: text-to-speech gave audio Gearslip can't read")
+            GearslipLog.w("guidance: text-to-speech gave audio Dashline can't read")
             return
         }
         val music = musicSink()

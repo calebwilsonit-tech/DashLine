@@ -164,7 +164,7 @@ private fun HomeHeader(onOpenSettings: () -> Unit) {
         Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 16.dp, bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Gearslip",
+                    "Dashline",
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),

@@ -24,7 +24,7 @@ object VideoTuning {
     enum class Mode(val label: String) {
         ALL_KEYFRAMES("Every frame full"),
         KEYFRAME_ON_TOUCH("Full frame on touch"),
-        STOCK("Gearslip default"),
+        STOCK("Original (5 s keyframes)"),
     }
 
     private val _mode = MutableStateFlow(Mode.ALL_KEYFRAMES)

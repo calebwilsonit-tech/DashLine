@@ -92,7 +92,7 @@ object CertFromLink {
         }
 
         val key = privateKey(first) ?: second?.let {
-            privateKey(it) ?: error("The second link isn't a private key in a form Gearslip reads.")
+            privateKey(it) ?: error("The second link isn't a private key in a form Dashline reads.")
         } ?: return Converted.NeedsKey
         // The certificate that goes with the key comes first, and any issuers after it.
         val leaf = certs.firstOrNull { belongs(key, it) } ?: error("The private key doesn't belong to this certificate.")
@@ -147,7 +147,7 @@ object CertFromLink {
 
     /** A PKCS#8 or PKCS#1 key, as PEM or as PKCS#8 DER; null when there's none. */
     private fun privateKey(bytes: ByteArray): PrivateKey? {
-        require(pemBlocks(bytes, "ENCRYPTED PRIVATE KEY").isEmpty()) { "The private key is encrypted. Gearslip needs one without a passphrase, or a .p12 file." }
+        require(pemBlocks(bytes, "ENCRYPTED PRIVATE KEY").isEmpty()) { "The private key is encrypted. Dashline needs one without a passphrase, or a .p12 file." }
         pemBlocks(bytes, "PRIVATE KEY").firstOrNull()?.let { return pkcs8(it) }
         if (pemBlocks(bytes, "RSA PRIVATE KEY").isNotEmpty()) return PemKeyParser.parsePrivateKey(String(bytes)).getPrivate()
         if (String(bytes).contains("-----BEGIN")) return null

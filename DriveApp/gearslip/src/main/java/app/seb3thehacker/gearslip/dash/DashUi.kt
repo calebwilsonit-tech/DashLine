@@ -738,7 +738,7 @@ private fun SettingsScreen(open: (DashScreen) -> Unit) {
                 Label("Touch latency test", 16.sp, weight = FontWeight.SemiBold)
             }
             Tap(onTap = { open(DashScreen.Classic) }, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                Label("Gearslip classic UI", 16.sp, weight = FontWeight.SemiBold)
+                Label("Classic screens", 16.sp, weight = FontWeight.SemiBold)
             }
             Tap(onTap = { Garage.press(context, dryRun = true) }, modifier = Modifier.weight(1f).fillMaxHeight()) {
                 Label("Garage test (no press)", 16.sp, weight = FontWeight.SemiBold)
