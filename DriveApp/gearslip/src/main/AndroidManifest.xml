@@ -84,6 +84,8 @@
 
     <!-- Placing a call from the car screen's dial pad or contacts list needs this. -->
     <uses-permission android:name="android.permission.CALL_PHONE" />
+    <!-- Dashline: new texts by voice from the Contacts screen. -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
 
     <!--
       Declared, not just requested. Templated apps decide whether to talk to a host by asking

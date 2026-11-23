@@ -83,6 +83,14 @@ fun DashUi() {
     remember(context) {
         DashPrefs.init(context)
         CarKeys.init(context)
+        app.seb3thehacker.gearslip.car.CarAssistant.init(context)
+        app.seb3thehacker.gearslip.car.VoiceReply.init(context)
+        DashText.init(context)
+        // GM radios turn Bluetooth music off while projecting, so the phone's sound must go over
+        // the car link. Dictation uses the phone's own recognizer instead of Gearslip's ~900 MB
+        // offline models.
+        app.seb3thehacker.gearslip.car.CarSettings.setPipeAudio(true)
+        app.seb3thehacker.gearslip.car.CarSettings.setSystemSpeech(true)
         true
     }
     DisposableEffect(context) {
@@ -91,8 +99,14 @@ fun DashUi() {
         onDispose {
             PhoneMedia.stop()
             CarCalls.stop()
+            app.seb3thehacker.gearslip.car.CarAssistant.cancel()
+            app.seb3thehacker.gearslip.audio.CarAudio.release()
+            DashMessages.clearMutes()
         }
     }
+    // Ask for the phone's sound as soon as the car offers somewhere to play it. Gearslip's CarUi
+    // did this; leaving it out is why the truck was silent.
+    LaunchedEffect(Unit) { app.seb3thehacker.gearslip.audio.CarAudio.request() }
 
     val themeId by DashPrefs.theme.collectAsState()
     val theme = DashThemes.byId(themeId)
@@ -162,7 +176,7 @@ fun DashUi() {
                         DashScreen.Home -> Dashboard(open = { screen = it })
                         DashScreen.Map -> MapScreen()
                         DashScreen.Music -> MusicScreen()
-                        DashScreen.Phone -> PhoneScreen()
+                        DashScreen.Phone -> ContactsScreen()
                         DashScreen.Messages -> MessagesScreen()
                         DashScreen.Garage -> GarageScreen()
                         DashScreen.Settings -> SettingsScreen(open = { screen = it })
@@ -170,6 +184,7 @@ fun DashUi() {
                     }
                 }
             }
+            VoiceOverlay(Modifier.align(Alignment.BottomCenter))
         }
     }
 }
@@ -419,25 +434,68 @@ private fun AlertCard(modifier: Modifier, onOpen: () -> Unit) {
             }
         }
         CallUiState.None -> {
-            val latest = remember(history) { history.filter(::worthShowing).maxByOrNull { it.postedAt } }
-            Tap(onTap = onOpen, modifier = modifier, contentAlignment = Alignment.TopStart) {
-                if (latest == null) {
-                    Column(Modifier.padding(12.dp)) {
-                        Label("No new messages", 16.sp, weight = FontWeight.SemiBold)
-                        Label("Texts and alerts show up here", 13.sp, t.textDim, maxLines = 2)
+            val muted by DashMessages.muted.collectAsState()
+            val latest = remember(history, muted) { messages(history, muted).firstOrNull() }
+            Card(modifier) {
+                Column(Modifier.fillMaxSize().padding(10.dp)) {
+                    Tap(
+                        onTap = onOpen,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        color = Color.Transparent,
+                        outline = false,
+                        contentAlignment = Alignment.TopStart,
+                    ) {
+                        if (latest == null) {
+                            Column(Modifier.padding(4.dp)) {
+                                Label("No new messages", 16.sp, weight = FontWeight.SemiBold)
+                                Label("Texts, Messenger, Discord and more show up here", 13.sp, t.textDim, maxLines = 2)
+                            }
+                        } else {
+                            NotificationBody(latest, Modifier.padding(4.dp), lines = 2)
+                        }
                     }
-                } else {
-                    NotificationBody(latest, Modifier.padding(12.dp), lines = 3)
+                    if (latest != null) MessageActions(latest, compact = true)
                 }
             }
         }
     }
 }
 
-/** System chatter (USB, keyboard layout, Android itself) never belongs on the car screen. */
-private val systemPackages = setOf("android", "com.android.systemui", "com.android.settings", "com.android.shell")
+/** Messages only (chat apps, things you can reply to), newest first, muted conversations left out. */
+private fun messages(history: List<CarNotification>, muted: Set<String>) =
+    history.filter { DashMessages.isMessage(it) && !DashMessages.isMuted(it, muted) }.sortedByDescending { it.postedAt }
 
-private fun worthShowing(n: CarNotification) = n.packageName !in systemPackages
+/** Reply by voice, read aloud, mark read, mute: what Android Auto offers on a message. */
+@Composable
+private fun MessageActions(n: CarNotification, compact: Boolean) {
+    // In the scrolling Messages list (not compact) taps fire on finger-up, so scrolling never replies.
+    val up = !compact
+    val t = LocalDashTheme.current
+    val context = LocalContext.current.applicationContext
+    val h = if (compact) 42.dp else 48.dp
+    val size = if (compact) 14.sp else 15.sp
+    Row(Modifier.fillMaxWidth().height(h), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (n.reply != null) {
+            Tap(
+                onTapUp = up,
+                onTap = { app.seb3thehacker.gearslip.car.VoiceReply.reply(n, readFirst = false) },
+                modifier = Modifier.weight(1.3f).fillMaxHeight(),
+                color = t.accent,
+            ) { Label("Reply", size, t.bgBottom, FontWeight.SemiBold) }
+        }
+        Tap(onTapUp = up, onTap = { app.seb3thehacker.gearslip.car.VoiceReply.read(n) }, modifier = Modifier.weight(1f).fillMaxHeight(), color = t.panelHi) {
+            Label("Read", size)
+        }
+        if (!compact && n.markRead != null) {
+            Tap(onTapUp = up, onTap = { CarNotifications.markThreadRead(context, n) }, modifier = Modifier.weight(1f).fillMaxHeight(), color = t.panelHi) {
+                Label("Mark read", size)
+            }
+        }
+        Tap(onTapUp = up, onTap = { DashMessages.mute(n) }, modifier = Modifier.weight(1f).fillMaxHeight(), color = t.panelHi) {
+            Label("Mute", size)
+        }
+    }
+}
 
 @Composable
 private fun NotificationBody(n: CarNotification, modifier: Modifier, lines: Int) {
@@ -492,15 +550,34 @@ private fun MusicScreen() {
 private fun MessagesScreen() {
     val t = LocalDashTheme.current
     val history by CarNotifications.history.collectAsState()
-    val recent = remember(history) { history.filter(::worthShowing).sortedByDescending { it.postedAt }.take(4) }
+    val muted by DashMessages.muted.collectAsState()
+    val list = remember(history, muted) { messages(history, muted) }
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Label("Messages", 22.sp, weight = FontWeight.Bold)
-        if (recent.isEmpty()) {
-            Label("Nothing yet. Texts from Google Messages land here.", 16.sp, t.textDim, maxLines = 2)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Label("Messages", 22.sp, weight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            if (muted.isNotEmpty()) {
+                Tap(onTap = DashMessages::clearMutes, modifier = Modifier.height(36.dp), color = t.panelHi) {
+                    Label("Unmute ${muted.size}", 14.sp, modifier = Modifier.padding(horizontal = 12.dp))
+                }
+            }
         }
-        for (n in recent) {
-            Card(Modifier.fillMaxWidth().weight(1f, fill = false)) {
-                NotificationBody(n, Modifier.padding(12.dp).fillMaxWidth(), lines = 2)
+        if (list.isEmpty()) {
+            Label("Nothing yet. Texts, Messenger, Discord and other chats land here.", 16.sp, t.textDim, maxLines = 2)
+        }
+        androidx.compose.foundation.lazy.LazyColumn(
+            Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(list.size, key = { list[it].key }) { i ->
+                val n = list[i]
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp)) {
+                        NotificationBody(n, Modifier.fillMaxWidth(), lines = 3)
+                        Spacer(Modifier.height(8.dp))
+                        MessageActions(n, compact = false)
+                    }
+                }
             }
         }
     }
@@ -509,8 +586,7 @@ private fun MessagesScreen() {
 @Composable
 private fun MapScreen() = ComingSoon(Glyph.Map, "Map", "Google map with turn-by-turn directions is the next big piece.")
 
-@Composable
-private fun PhoneScreen() = ComingSoon(Glyph.Phone, "Phone", "Recents, favourites and a keypad are coming. Calls already show on the dashboard.")
+
 
 /** The dashboard's garage strip: hold to open/close, with myQ's last known status. */
 @Composable

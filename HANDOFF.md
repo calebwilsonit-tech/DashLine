@@ -78,6 +78,20 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **Audio, messaging and contacts.**
+  - *Silent truck:* the log said "music goes over Bluetooth: the media channel stays closed". GM radios turn BT music off while
+    projecting, and Dashline never called `CarAudio.request()` (Gearslip's CarUi did). Fix: `CarSettings.setPipeAudio(true)` and
+    `setSystemSpeech(true)` in `GearslipActivity.onCreate` (decided at connect time) and in DashUi, plus `CarAudio.request()` on DashUi start.
+    To skip the per-connection consent dialog: `adb shell appops set app.dashline.dev PROJECT_MEDIA allow`. Gearslip's
+    AudioChoiceDialog "Use Bluetooth" button can still set it false until the next launch.
+  - *Messages:* `dash/DashMessaging.kt` → `DashMessages.isMessage` = known chat apps (Messages, Messenger, Discord, WhatsApp,
+    Telegram, Signal, IG, Snap, Chat, Slack, Teams, GroupMe, Dialer) OR it has a reply action OR MessagingStyle lines. Per-conversation
+    mute for the drive (cleared on disconnect). The dashboard card and Messages list have Reply (Gearslip `VoiceReply`), Read,
+    Mark read and Mute. List taps fire on finger-up.
+  - *Contacts:* `dash/DashPhone.kt` `ContactsScreen` (the Phone rail item) lists favourites, then A–Z with a letter strip; Call
+    uses Gearslip `placeCall` (Telecom) and Text uses `DashText` (say → dictate → read back → 4 s countdown → SmsManager).
+    New permission `SEND_SMS`, granted with adb. `VoiceOverlay` shows reading/listening/sending with Cancel / Send.
+  - Rendered on the emulator; **not yet installed on the Pixel** (it was unplugged), so no truck test yet.
 - 2026-11-23: **Found the root cause of the lag** from the owner's latency-test video (`PXL_20261123_223924868.mp4`,
   626 frames at 30 fps, reviewed frame by frame) plus the Dashline log. The radio only updated its picture at frames 88, 239, 388 and 538:
   **exactly every 5.0 s, matching Gearslip's `I_FRAME_INTERVAL_S = 5`**. Between them the spinner was frozen, and flip #3 was never
