@@ -78,6 +78,11 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **First real garage press worked.** From the Pixel's lock screen (unlocked by face/trust, no PIN needed):
+  request to myQ accepting the click took 2.5 s, and the door closed (owner confirmed; myQ then read "Closed"). Debug trigger:
+  `am start --activity-clear-task -n app.dashline.dev/app.seb3thehacker.gearslip.CarPreviewActivity --es garage dry|press`.
+  Known gap: myQ's first frame shows a *stale* status (it said "Open for 49 minutes" right before the press), so the
+  status Dashline shows after a press may lag. Consider re-reading myQ a few seconds later, or showing "Sent" until confirmed.
 - 2026-11-23: Built the garage button. **Dry run on the owner's Pixel found myQ's door button 0.3 s after the request**
   (no press) and returned home. With the phone locked, it correctly reported "Phone is locked". No real press tested yet.
 - 2026-11-23: Installed Dashline Dev on the owner's Pixel 10 Pro XL. Release Gearslip was **uninstalled**
@@ -150,5 +155,5 @@ Hard constraints (from the owner, don't re-propose these):
    `android.car.permission.TEMPLATE_RENDERER` permission with different signing keys). Run the latency test in the truck with slow-mo video.
 11. [ ] Strip unused Gearslip weight: the speech engine warms ~900 MB of models in `CarServices.init` (Dashline doesn't call it,
    except when the classic UI is opened), plus browser/adblock, the update checker, and stats.
-12. [ ] Phone screen (recents/favourites/keypad), message reply, Garage, Map (see above).
+12. [ ] Phone screen (recents/favourites/keypad), message reply, Map (see above). Garage is done (verify screen-off + Extend Unlock in the truck).
 13. [ ] Performance pass: measure frame times and encoder output on the truck.

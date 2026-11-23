@@ -195,6 +195,7 @@ object Garage {
         val status = find(root, ID_STATUS)?.text?.toString()?.trim().orEmpty()
         val name = find(root, ID_NAME)?.text?.toString()?.trim().orEmpty()
         if (status.isEmpty() && name.isEmpty()) return
+        if (status != _state.value.status) GearslipLog.i("garage: myQ says \"$name\" is \"$status\"")
         _state.value = _state.value.copy(
             status = status.ifEmpty { _state.value.status },
             doorName = name.ifEmpty { _state.value.doorName },

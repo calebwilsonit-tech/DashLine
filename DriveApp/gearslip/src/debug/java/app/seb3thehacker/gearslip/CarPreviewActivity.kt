@@ -100,6 +100,11 @@ class CarPreviewActivity : ComponentActivity() {
         }
 
         GearslipLog.i("preview: displayId=${p.displayId}")
+
+        // Dashline garage, without holding a button: --es garage dry|press (fires after 3 s).
+        intent.getStringExtra("garage")?.let { mode ->
+            main.postDelayed({ app.seb3thehacker.gearslip.dash.Garage.press(this, dryRun = mode != "press") }, 3000)
+        }
         if (intent.getBooleanExtra("hide", false)) p.setOverlayVisible(false)
 
         intent.getStringExtra("launch")?.let { pkg ->

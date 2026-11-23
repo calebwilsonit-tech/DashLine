@@ -22,11 +22,18 @@ Google's Android Auto is still turned off.
    - Each tap flips the screen black↔white the moment the radio sends the touch to the phone.
    - Send me the video, or count the slow-mo frames yourself from fingertip contact to the flip.
 
+## Garage (new)
+- With the phone **screen off**, connected to the truck (Extend Unlock trusted device), **hold** the garage strip
+  under the clock on the dashboard for about half a second. The phone screen should light up briefly, myQ opens, the door moves,
+  and the phone goes dark again.
+- **Then try it a second time.** This checks whether putting the phone back to sleep paused Extend Unlock. If the second
+  press says "Phone is locked", tell me and I'll change how it goes back to sleep.
+
 ## Afterwards
 6. Send me the log: **Dashline Dev → Logs → Earlier →** the truck session **→ Share**.
    Save it to the project folder, or attach it.
 7. Tell me what felt slow, ugly, or wrong.
 
 ## Known gaps in this build
-Map, Phone keypad/recents, and Garage are placeholders. Message replies aren't in Dashline yet.
+Map and the Phone keypad/recents are placeholders. Message replies aren't in Dashline yet.
 "Gearslip classic UI" in Settings still has all of Gearslip's features if you need them.
