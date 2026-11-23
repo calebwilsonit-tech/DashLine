@@ -1,0 +1,4 @@
+# Pristine upstream clone for reference/diffing; re-clone with:
+#   git clone https://github.com/twinksoftware/Gearslip.git upstream/Gearslip
+upstream/
+*.log

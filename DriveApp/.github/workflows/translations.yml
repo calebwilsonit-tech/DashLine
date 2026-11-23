@@ -1,0 +1,23 @@
+name: Translations
+
+# Weblate is the only thing that writes translated strings: it pushes straight to experimental,
+# never through a pull request. A PR that edits them collides with Weblate's own copy, and
+# Weblate locks itself until someone resets it. Edit the English strings.xml only.
+# Weblate's own pull requests are the exception: they are the translations.
+on:
+  pull_request:
+    paths:
+      - "gearslip/src/main/res/values-*/strings.xml"
+
+# It only reads the pull request's own details from the event, so it needs no token at all.
+permissions: {}
+
+jobs:
+  weblate-only:
+    if: github.event.pull_request.user.login != 'weblate'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Translations go through Weblate
+        run: |
+          echo "::error::This pull request edits a translation. Please make translation changes on Weblate instead: https://hosted.weblate.org/engage/gearslip/ (it can upload a whole strings.xml under Files > Upload translation). See CONTRIBUTING.md."
+          exit 1
