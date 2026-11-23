@@ -78,6 +78,14 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **Found the root cause of the lag** from the owner's latency-test video (`PXL_20261123_223924868.mp4`,
+  626 frames at 30 fps, reviewed frame by frame) plus the Dashline log. The radio only updated its picture at frames 88, 239, 388 and 538:
+  **exactly every 5.0 s, matching Gearslip's `I_FRAME_INTERVAL_S = 5`**. Between them the spinner was frozen, and flip #3 was never
+  shown, although the phone sent 30 fps and every frame was acked. **Conclusion: this IntelliLink displays only keyframes (IDR).**
+  Fix: `dash/VideoTuning.kt` with modes ALL_KEYFRAMES (default), KEYFRAME_ON_TOUCH and STOCK, selectable in Dashline
+  Settings and applied on the next connect. ALL sets `KEY_I_FRAME_INTERVAL=0` and also calls `requestSyncFrame()` after any non-key output.
+  Verified on the Pixel 10 Pro XL encoder: ALL gave 60/60 keyframes, the other modes 1/60. The stats line now logs `key=`.
+  **Not yet verified on the truck.** Debug check: `CarPreviewActivity --ez enctest true`.
 - 2026-11-23: **First real garage press worked.** From the Pixel's lock screen (unlocked by face/trust, no PIN needed):
   request to myQ accepting the click took 2.5 s, and the door closed (owner confirmed; myQ then read "Closed"). Debug trigger:
   `am start --activity-clear-task -n app.dashline.dev/app.seb3thehacker.gearslip.CarPreviewActivity --es garage dry|press`.
@@ -93,6 +101,8 @@ Hard constraints (from the owner, don't re-propose these):
 
 ## Known issues / risks
 - **Gearslip ran slowly on the truck.** The cause is unknown. Video settings look sane (HW H.264 Baseline at negotiated size, 800x480@30 = 8 Mbps). Suspects: extra features, Compose recomposition, encoder repeat-frame behavior. Get a Gearslip session log from the truck to confirm.
+- **SOLVED (pending truck check): touch lag = the radio shows only keyframes.** See the progress log. The analysis below is kept
+  for history; suspects 1–4 were not the main cause.
 - **Touch lag on the radio** (owner report): a big delay between tapping the radio and the radio
   showing a response. The phone itself is fast. Path: HU touch → USB → phone input → Compose →
   VirtualDisplay → H.264 encoder → ack-gated send → HU decoder → screen. Suspects, in likely order:
@@ -121,6 +131,8 @@ Hard constraints (from the owner, don't re-propose these):
     low fps, and (b) the HU's own touch-report and decode/display time, which can't be seen from the phone.
   - Next: build a latency test screen (full-screen flash on touch-DOWN) and have the owner film it in
     slow-mo to measure true end-to-end time. Design the UI to act on touch-down with no transition animations.
+- **USB transport dropped again** in the second Dashline session (74 s, `read failed: EIO`, then the accessory detached). The first time was at 149 s.
+  Could be the owner unplugging; ask them. If not, try another cable or port.
 - **USB transport dropped** after 149 s in that session (`read failed: EIO`, then the accessory detached).
   Cause unknown: cable, port, or the HU resetting. If it repeats, try another cable and compare logs.
 - The dashboard alert card shows any app's notification (e.g. Redfin). Consider limiting it to messaging apps plus

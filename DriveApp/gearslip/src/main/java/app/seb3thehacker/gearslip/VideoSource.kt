@@ -80,7 +80,8 @@ class VideoSource(
             setInteger(MediaFormat.KEY_FRAME_RATE, frameRate)
             // Drops already ask for a fresh keyframe, so a long interval costs nothing in recovery
             // and spares the link a big frame every second.
-            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, I_FRAME_INTERVAL_S)
+            // Dashline: the 2017 GMC radio only shows keyframes, see dash/VideoTuning.
+            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, app.seb3thehacker.gearslip.dash.VideoTuning.iFrameIntervalSeconds)
             if (mode == Mode.SURFACE) {
                 // A surface encoder only makes a frame when the screen changes, and many decoders
                 // show a frame only once the next one arrives. So the last change before the
@@ -119,6 +120,7 @@ class VideoSource(
         codec = encoder
         running = true
 
+        log.i("keyframe mode: ${app.seb3thehacker.gearslip.dash.VideoTuning.mode.value}")
         log.i("encoder started: ${width}x$height @ ${frameRate}fps, ${bitRate / 1000} kbps${if (wireless) " (wireless)" else ""}, H.264 Baseline level ${level.label}, mode=$mode")
 
         worker = Thread {
@@ -208,11 +210,13 @@ class VideoSource(
                     if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
                         onCodecConfig(data)
                     } else {
-                        onFrame(
-                            data,
-                            info.presentationTimeUs,
-                            info.flags and MediaCodec.BUFFER_FLAG_KEY_FRAME != 0,
-                        )
+                        val key = info.flags and MediaCodec.BUFFER_FLAG_KEY_FRAME != 0
+                        // An encoder that ignores an interval of 0 still gets every next frame
+                        // as a keyframe this way.
+                        if (!key && app.seb3thehacker.gearslip.dash.VideoTuning.mode.value ==
+                            app.seb3thehacker.gearslip.dash.VideoTuning.Mode.ALL_KEYFRAMES
+                        ) requestSyncFrame()
+                        onFrame(data, info.presentationTimeUs, key)
                     }
                 }
                 encoder.releaseOutputBuffer(outIndex, false)

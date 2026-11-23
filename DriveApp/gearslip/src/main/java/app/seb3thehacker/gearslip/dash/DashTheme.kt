@@ -73,6 +73,7 @@ val LocalDashTheme = staticCompositionLocalOf { DashThemes.Carbon }
 object DashPrefs {
     private const val FILE = "dashline"
     private const val KEY_THEME = "theme"
+    private const val KEY_VIDEO = "video_mode"
 
     private val _theme = MutableStateFlow(DashThemes.Carbon.id)
     val theme: StateFlow<String> = _theme.asStateFlow()
@@ -83,11 +84,17 @@ object DashPrefs {
         if (this.context != null) return
         this.context = context.applicationContext
         _theme.value = prefs()?.getString(KEY_THEME, null) ?: DashThemes.Carbon.id
+        VideoTuning.load(prefs()?.getString(KEY_VIDEO, null))
     }
 
     fun setTheme(id: String) {
         _theme.value = id
         prefs()?.edit()?.putString(KEY_THEME, id)?.apply()
+    }
+
+    fun setVideoMode(mode: VideoTuning.Mode) {
+        VideoTuning.set(mode)
+        prefs()?.edit()?.putString(KEY_VIDEO, mode.name)?.apply()
     }
 
     private fun prefs() = context?.getSharedPreferences(FILE, Context.MODE_PRIVATE)

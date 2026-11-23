@@ -101,6 +101,27 @@ class CarPreviewActivity : ComponentActivity() {
 
         GearslipLog.i("preview: displayId=${p.displayId}")
 
+        // Dashline keyframe check: --ez enctest true encodes 60 test-card frames per VideoTuning
+        // mode on this phone's real encoder and logs how many came out as keyframes.
+        if (intent.getBooleanExtra("enctest", false)) Thread {
+            val before = app.seb3thehacker.gearslip.dash.VideoTuning.mode.value
+            for (m in app.seb3thehacker.gearslip.dash.VideoTuning.Mode.entries) {
+                app.seb3thehacker.gearslip.dash.VideoTuning.set(m)
+                var frames = 0
+                var keys = 0
+                var bytes = 0L
+                val done = java.util.concurrent.CountDownLatch(1)
+                val src = VideoSource(800, 480, 30, onCodecConfig = {}, onFrame = { d, _, k ->
+                    frames++; bytes += d.size; if (k) keys++
+                    if (frames >= 60) done.countDown()
+                })
+                runCatching { src.start(); done.await(10, java.util.concurrent.TimeUnit.SECONDS) }
+                src.stop()
+                GearslipLog.i("enctest: $m -> $keys of $frames frames were keyframes, avg ${if (frames > 0) bytes / frames else 0} bytes")
+            }
+            app.seb3thehacker.gearslip.dash.VideoTuning.set(before)
+        }.start()
+
         // Dashline garage, without holding a button: --es garage dry|press (fires after 3 s).
         intent.getStringExtra("garage")?.let { mode ->
             main.postDelayed({ app.seb3thehacker.gearslip.dash.Garage.press(this, dryRun = mode != "press") }, 3000)

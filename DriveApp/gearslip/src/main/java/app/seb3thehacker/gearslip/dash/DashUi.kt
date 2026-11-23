@@ -616,6 +616,17 @@ private fun SettingsScreen(open: (DashScreen) -> Unit) {
                 }
             }
         }
+        val video by VideoTuning.mode.collectAsState()
+        Label("Video mode (applies on next connect)", 16.sp, weight = FontWeight.Bold)
+        Row(Modifier.fillMaxWidth().height(48.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            for (m in VideoTuning.Mode.entries) {
+                Tap(
+                    onTap = { DashPrefs.setVideoMode(m) },
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    color = if (m == video) t.accent else t.panel,
+                ) { Label(m.label, 14.sp, if (m == video) t.bgBottom else t.text, FontWeight.SemiBold) }
+            }
+        }
         Label("Tools", 20.sp, weight = FontWeight.Bold)
         Row(Modifier.fillMaxWidth().height(64.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Tap(onTap = { open(DashScreen.Latency) }, modifier = Modifier.weight(1f).fillMaxHeight()) {

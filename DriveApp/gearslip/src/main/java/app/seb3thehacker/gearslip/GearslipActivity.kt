@@ -159,6 +159,7 @@ class GearslipActivity : ComponentActivity(), Projection {
             }
         }
         CarSettings.init(this)
+        app.seb3thehacker.gearslip.dash.DashPrefs.init(this)
         // Before any car connects: CarServices only starts once the car shows Gearslip's screen,
         // and a car that waits to know the phone before it shows it would never hear (issue #43).
         app.seb3thehacker.gearslip.car.CarBluetooth.init(this)

@@ -103,6 +103,7 @@ class GearslipRunner(
     @Volatile private var ackWaitMs = 0L
     @Volatile private var maxUnacked = 4
     @Volatile private var framesSent = 0
+    @Volatile private var keyFramesSent = 0
     @Volatile private var inputChannelId: Int = -1
     @Volatile private var inputKeycodes: List<Int> = emptyList()
     @Volatile private var sensorChannelId: Int = -1
@@ -999,6 +1000,15 @@ class GearslipRunner(
         // Time the next frame against this tap: see [reportTouchLatency].
         if (action == ACTION_DOWN || action == ACTION_UP) touchAtUs = System.nanoTime() / 1000
         projection?.onTouch(action, actionIndex, points)
+        // Dashline: the 2017 GMC radio only shows keyframes (dash/VideoTuning). Ask for one now and
+        // again once the tap has been drawn, so the response appears straight away.
+        if ((action == ACTION_DOWN || action == ACTION_UP) &&
+            app.seb3thehacker.gearslip.dash.VideoTuning.mode.value ==
+            app.seb3thehacker.gearslip.dash.VideoTuning.Mode.KEYFRAME_ON_TOUCH
+        ) {
+            videoSource?.requestSyncFrame()
+            touchSyncHandler.postDelayed({ videoSource?.requestSyncFrame() }, 60)
+        }
     }
 
     /**
@@ -1322,6 +1332,7 @@ class GearslipRunner(
         send(MSG_MEDIA_DATA, timestamp + data, encrypted = true, channel = videoChannelId)
         reportTouchLatency(presentationTimeUs)
         framesSent++
+        if (keyFrame) keyFramesSent++
         if (framesSent <= 3 || keyFrame && framesSent % 30 == 0) {
             log.i(
                 "-> Data frame #$framesSent (${data.size} bytes, keyFrame=$keyFrame, " +
@@ -1440,6 +1451,7 @@ class GearslipRunner(
 
     /** Arrival time of the last tap still waiting to be seen in a frame; 0 when none is. */
     @Volatile private var touchAtUs = 0L
+    private val touchSyncHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     /**
      * How long a tap takes to reach the car, split where the phone can see it: the UI drawing a
@@ -1615,7 +1627,7 @@ class GearslipRunner(
                     SessionReport.stream("${"%.1f".format(fps)} fps, sent=$sent acked=$acksSeen")
                     log.i(
                         "video: ${"%.1f".format(fps)} fps over 5s | sent=$sent waited=${waited}ms " +
-                            "acked=$acksSeen inFlight=$inFlight split=$splitMessages " +
+                            "acked=$acksSeen key=$keyFramesSent inFlight=$inFlight split=$splitMessages " +
                             "kbps=${(videoSource?.bitRate ?: 0) / 1000}",
                     )
                     adaptBitRate(fps, waited)
