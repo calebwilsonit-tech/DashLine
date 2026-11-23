@@ -36,7 +36,17 @@ Hard constraints (from the owner, don't re-propose these):
 | Drop heavy Gearslip extras (browser/adblock, offline speech models, third-party car-app hosting, wireless) | The owner reported Gearslip ran slowly; these are the likely cost. Not yet measured. |
 
 ## Repo layout
-- `upstream/Gearslip/`: shallow clone of Gearslip (unmodified so far). The plan is to fork/copy it into our own app module.
+- `DriveApp/`: **our app ("Dashline")**, a copy of Gearslip at upstream commit `4e3f8e6` with our changes.
+  The module is still `gearslip`, and the Kotlin package is still `app.seb3thehacker.gearslip` (renaming 200+ files can wait).
+  applicationId is `app.dashline` (debug: `app.dashline.dev`, label "Dashline Dev"). The APK lands in `DriveApp/build/Dashline-debug.apk`.
+  - **Our code lives in `gearslip/src/main/java/app/seb3thehacker/gearslip/dash/`**:
+    - `DashUi.kt`: root car UI (rail, 3-pane dashboard, music/messages/settings screens, latency test, "classic" fallback to Gearslip's `CarUi`).
+    - `DashParts.kt`: `Tap` (acts on touch-DOWN, pressed colour drawn without recomposition), `Card`, `Label`, `GlyphIcon` (Canvas-drawn icons).
+    - `DashTheme.kt`: `DashTheme` and `DashThemes` (Carbon, Denali Chrome, Neon Night), plus `DashPrefs` (SharedPreferences "dashline").
+    - `PhoneMedia.kt`: MediaSession remote control (YouTube Music etc.) through notification-listener access.
+  - `DashUi()` replaced `CarUi()` at all 4 call sites: `GearslipActivity.showCarUi`, `LauncherActivity`, `ui/CarPreviewScreen`, and debug `CarPreviewActivity`.
+- `upstream/Gearslip/`: pristine Gearslip clone for diffing (git-ignored).
+- `screenshots/`: renders of the car screen from the emulator.
 - `STAGE2_TRUCK_TEST.md`: the truck test procedure that proved Gearslip works (done).
 - `HANDOFF.md`: this file.
 
@@ -44,13 +54,24 @@ Hard constraints (from the owner, don't re-propose these):
 - Android Studio installed via winget at `C:\Program Files\Android\Android Studio` (bundled JDK at `...\jbr`, JDK 25).
 - Android SDK at `%LOCALAPPDATA%\Android\Sdk` (cmdline-tools/latest, platform-tools). User env vars set: `ANDROID_HOME`, `JAVA_HOME`.
 - Gearslip: AGP 9.1.1, Kotlin 2.4.0, Gradle 9.3.1, compileSdk/targetSdk 37, minSdk 31.
-- Build: in `upstream/Gearslip`, run `gradlew.bat :gearslip:assembleDebug`. The APK lands in `build/Gearslip-debug.apk`.
+- Build: in `DriveApp`, run `gradlew.bat :gearslip:assembleDebug -PnoR8` (fast, about 1 min clean, a few seconds incremental). JAVA_HOME = Android Studio's `jbr`.
+- Emulator: AVD `dash36` (android-36-ext19 google_apis x86_64). Start it headless with
+  `emulator -avd dash36 -no-window -no-audio -gpu swiftshader_indirect`.
+- **Render car screens without the truck**: install the debug APK, then
+  `adb shell am start -n app.dashline.dev/app.seb3thehacker.gearslip.CarPreviewActivity --ei w 800 --ei h 480 --ei dpi 160 --es taps "x,y;x,y"`.
+  This writes `preview-N.png` (one per tap) to `/sdcard/Android/data/app.dashline.dev/files/`. Grant music access with
+  `adb shell cmd notification allow_listener app.dashline.dev/app.seb3thehacker.gearslip.notify.GearslipNotificationListener`.
+- The SDK uses the new `android` CLI (`cmdline-tools/latest/bin/android.exe sdk install ...`). `sdkmanager` is deprecated.
 
 ## Progress log
 - 2026-11-23: Explored options. Proved with the stock Gearslip APK that a non-Google app can project to the truck (it also ran Vivi Music + Vela Maps). Installed the toolchain, cloned Gearslip, mapped its architecture. Unmodified Gearslip builds on this PC
   (`upstream/Gearslip/build/Gearslip-debug.apk`, about 4.5 min clean build). Not yet installed on the Pixel. The debug build is
   signed differently from the release Gearslip already on the phone, so the release app must be uninstalled first.
-  Waiting on: a truck session log from the already-installed release Gearslip (touch latency data).
+  Got the truck log (see Known issues).
+- 2026-11-23: Created Dashline (`DriveApp/`), committed the Gearslip baseline in git, and built the first Dashline UI: rail, a 3-pane dashboard
+  (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
+  with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
+  real projection path. **Not yet tested on the truck.**
 
 ## Known issues / risks
 - **Gearslip ran slowly on the truck.** The cause is unknown. Video settings look sane (HW H.264 Baseline at negotiated size, 800x480@30 = 8 Mbps). Suspects: extra features, Compose recomposition, encoder repeat-frame behavior. Get a Gearslip session log from the truck to confirm.
@@ -96,12 +117,17 @@ Hard constraints (from the owner, don't re-propose these):
    latency, ack wait, and the HU's max_unacked. Then fix the latency at the protocol/encoder level
    first, since every feature depends on it.
 3. [ ] Create our app (new package/name) from Gearslip, keeping the protocol/, audio/, call/, notify/, media/, mirror/ and root runner files. Strip browser/, speech/, wireless/, update/, host/ (car-app hosting).
-4. [ ] New root composable + theme system (theme JSON: colors, fonts, wallpaper, tile layout), with 3 starter themes.
+4. [x] (first version) New root composable + theme system (theme JSON: colors, fonts, wallpaper, tile layout), with 3 starter themes.
 5. [ ] Dashboard: a split layout of up to 3 panes (a primary pane such as the Map, plus side cards for Music
    and notifications/calls). The panes can be swapped, there's a full-screen mode per app, and a launcher
    with tiles for Map, Music, Phone, Messages, Garage, plus a clock/weather strip. Each pane recomposes independently.
-6. [ ] Music: MediaSession controller via NotificationListener (YouTube Music).
+6. [x] (first version, untested with YTM on a real phone) Music: MediaSession controller via NotificationListener (YouTube Music).
 7. [ ] Phone + Messages: reuse Gearslip's call/ and notify/ code, restyled.
 8. [ ] Garage: AccessibilityService that opens myQ, finds the door button (by learned view id/text), taps it, returns. Includes a setup screen.
 9. [ ] Map: Google Maps SDK in the Presentation, destination search, routing, voice guidance.
-10. [ ] Performance pass: measure frame times and encoder output on the truck.
+10. [ ] Install Dashline on the Pixel (uninstall release Gearslip first: both declare the
+   `android.car.permission.TEMPLATE_RENDERER` permission with different signing keys). Run the latency test in the truck with slow-mo video.
+11. [ ] Strip unused Gearslip weight: the speech engine warms ~900 MB of models in `CarServices.init` (Dashline doesn't call it,
+   except when the classic UI is opened), plus browser/adblock, the update checker, and stats.
+12. [ ] Phone screen (recents/favourites/keypad), message reply, Garage, Map (see above).
+13. [ ] Performance pass: measure frame times and encoder output on the truck.

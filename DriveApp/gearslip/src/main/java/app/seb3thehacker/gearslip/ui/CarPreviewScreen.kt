@@ -87,7 +87,7 @@ fun CarPreviewScreen(onBack: () -> Unit) {
 
     // Held here, not in the frame, so turning the phone between the two layouts keeps the car UI running.
     val projector = if (launcher) null else rememberCarProjector(width, height, density, "gearslip-preview") {
-        CompositionLocalProvider(app.seb3thehacker.gearslip.car.LocalCarPreview provides true) { CarUi() }
+        CompositionLocalProvider(app.seb3thehacker.gearslip.car.LocalCarPreview provides true) { app.seb3thehacker.gearslip.dash.DashUi() }
     }
 
     // The frame is drawn the same way in both layouts; only what surrounds it differs.

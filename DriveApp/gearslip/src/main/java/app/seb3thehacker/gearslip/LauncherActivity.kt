@@ -124,7 +124,7 @@ private fun LauncherScreen(onOpenGearslip: () -> Unit) {
             LauncherMode.setActive(true)
             onDispose { LauncherMode.setActive(false) }
         }
-        val projector = rememberCarProjector(width, height, density, "gearslip-launcher") { CarUi() }
+        val projector = rememberCarProjector(width, height, density, "gearslip-launcher") { app.seb3thehacker.gearslip.dash.DashUi() }
         DisposableEffect(projector) {
             CarKeys.focusSink = { code, down -> projector.dispatchKey(code, down) }
             onDispose { CarKeys.focusSink = null }

@@ -65,13 +65,13 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "app.seb3thehacker.gearslip"
+        applicationId = "app.dashline"
         minSdk = 31
         targetSdk = 37
         versionCode = gitVersion.code
         // -PgearslipVersionName=0.1.99-test makes a build that thinks it's older, to try the updater.
         versionName = project.findProperty("gearslipVersionName")?.toString() ?: gitVersion.name
-        manifestPlaceholders["appLabel"] = "Gearslip"
+        manifestPlaceholders["appLabel"] = "Dashline"
         // Where opted-in phones send their daily usage note: the stats-worker/ Worker's address,
         // set as gearslipStatsUrl in gradle.properties. Left empty, nothing is ever sent.
         buildConfigField("String", "STATS_URL", "\"${project.findProperty("gearslipStatsUrl") ?: ""}\"")
@@ -103,10 +103,10 @@ android {
         debug {
             applicationIdSuffix = ".dev"
             signingConfigs.findByName("release")?.let { signingConfig = it }
-            manifestPlaceholders["appLabel"] = "Gearslip Debug"
+            manifestPlaceholders["appLabel"] = "Dashline Dev"
             // English (XA) and Arabic (XB) under the phone's languages: stretched, accented and
             // right-to-left text, which shows what's still hardcoded and what doesn't fit.
-            isPseudoLocalesEnabled = true
+            isPseudoLocalesEnabled = false
             // Shrunk with R8 like a release, so a debug install behaves like what ships (a keep
             // rule missing for release shows up here first). -PnoR8 skips it for a quicker build.
             if (!project.hasProperty("noR8")) {
@@ -174,7 +174,7 @@ tasks.register("renameApk") {
             .filter { it.extension == "apk" }
             .toList()
             .forEach { apk ->
-                val renamed = File(rootBuildDir, "Gearslip-${apk.parentFile.name}.apk")
+                val renamed = File(rootBuildDir, "Dashline-${apk.parentFile.name}.apk")
                 apk.copyTo(renamed, overwrite = true)
             }
     }

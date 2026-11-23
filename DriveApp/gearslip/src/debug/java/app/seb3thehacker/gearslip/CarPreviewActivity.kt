@@ -81,7 +81,7 @@ class CarPreviewActivity : ComponentActivity() {
         }, main)
 
         val p = ScreenProjector(this).also { projector = it }
-        p.start(imageReader.surface, w, h, dpi) { CarUi() }
+        p.start(imageReader.surface, w, h, dpi) { app.seb3thehacker.gearslip.dash.DashUi() }
 
         // Stand in for the car's media sink, so the phone half of the audio path runs for real.
         if (intent.getBooleanExtra("audio", false)) {
