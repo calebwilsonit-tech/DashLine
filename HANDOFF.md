@@ -103,6 +103,13 @@ Hard constraints (from the owner, don't re-propose these):
   - Updater: Gearslip's `UpdateChecker` now reads `api.github.com/repos/calebwilsonit-tech/DashLine/releases`. Versions come
     from git tags `vX.Y.Z[-beta|-alpha]` (`gitVersion` in `gearslip/build.gradle.kts`). It needs release-signed APKs uploaded as
     release assets (not `*debug*`), signed with one key forever (`keystore.properties`, never committed).
+  - **Releases:** `scripts/release.sh <version> [notes]` tags `v<version>`, builds the signed release APK, pushes, and creates the GitHub
+    release with `Dashline-<version>.apk` (a `-beta`/`-alpha` suffix makes a pre-release). The signing key is
+    `C:\Users\wiked\.dashline-signing\dashline-release.jks` with its `keystore.properties` (copied into `DriveApp/`, git-ignored).
+    **Back that folder up: losing it means users must uninstall to update.** Release builds have R8 off (Vela reflection).
+    The debug build is also signed with this key when it's present, so installs signed with the old debug key must be uninstalled once.
+  - Repo: public at github.com/calebwilsonit-tech/DashLine (branch `main`). Before the first push, history was rewritten to drop the
+    phone screenshots (`screenshots/pixel/`) and the phone's adb serial. Never commit phone screenshots that show notifications or locations.
   - Messages filter tightened: chat apps or anything with a reply action; Facebook/Twitter/Reddit excluded.
 - 2026-11-23: **Full-drive log (`Gearslip log-3.txt`, keyframe build).** Three sessions, 393 s / 197 s / ~230 s.
   - All-keyframes confirmed in the field: `key=` equaled `sent` all drive, frames ~31–36 KB, ~10 fps on a still screen, acks immediate,
