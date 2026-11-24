@@ -63,6 +63,7 @@ import app.seb3thehacker.gearslip.notify.CarNotification
 import app.seb3thehacker.gearslip.notify.CarNotifications
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import java.text.DateFormat
 import java.util.Date
 
@@ -118,6 +119,20 @@ fun DashUi() {
         }
         kotlinx.coroutines.delay(600)
         PhoneMedia.autoPlay(context)
+    }
+    // Music pauses while anything voice is going on, and comes back after.
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.flow.combine(
+            app.seb3thehacker.gearslip.car.VoiceReply.state,
+            DashText.state,
+            app.seb3thehacker.gearslip.car.CarAssistant.state,
+            PhoneAssistant.state,
+        ) { reply, text, assistant, phone ->
+            reply.phase != app.seb3thehacker.gearslip.car.VoiceReply.Phase.IDLE ||
+                text.phase != DashText.Phase.IDLE ||
+                assistant.phase != app.seb3thehacker.gearslip.car.CarAssistant.Phase.IDLE ||
+                phone.active
+        }.distinctUntilChanged().collect { VoiceDuck.update(it) }
     }
     // The assistant: whatever CarAssistant heard (mic button or the steering-wheel voice key).
     LaunchedEffect(Unit) {

@@ -227,3 +227,33 @@ object PhoneMedia {
 
     private const val ART_PX = 256
 }
+
+/**
+ * Music off while Dashline talks or listens: a message read aloud, a voice reply or text, either
+ * assistant. Asking for audio focus alone didn't pause YouTube Music in the truck, so the player
+ * is paused directly, and resumed afterwards only if this paused it.
+ */
+object VoiceDuck {
+    private var pausedByUs = false
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+    private val resume = Runnable {
+        if (pausedByUs) {
+            pausedByUs = false
+            PhoneMedia.play()
+        }
+    }
+
+    fun update(voiceActive: Boolean) {
+        if (voiceActive) {
+            main.removeCallbacks(resume)
+            if (PhoneMedia.now.value.playing) {
+                PhoneMedia.pause()
+                pausedByUs = true
+                app.seb3thehacker.gearslip.GearslipLog.i("voice duck: music paused")
+            }
+        } else if (pausedByUs) {
+            // A short wait, so the gap between "read" and "reply?" doesn't blip the music back on.
+            main.postDelayed(resume, 800)
+        }
+    }
+}
