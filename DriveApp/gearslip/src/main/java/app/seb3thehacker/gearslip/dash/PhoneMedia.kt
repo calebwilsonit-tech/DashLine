@@ -212,6 +212,19 @@ object PhoneMedia {
         }
     }
 
+    /** Music off when the phone is unplugged from the car. */
+    fun pauseOnDisconnect(context: Context) {
+        GearslipLog.i("dash media: pause on disconnect")
+        val c = controller
+        if (c != null) {
+            if (_now.value.playing) c.transportControls.pause()
+        } else {
+            appContext = context.applicationContext
+            val audio = appContext?.getSystemService(android.media.AudioManager::class.java)
+            if (audio?.isMusicActive == true) mediaKey(android.view.KeyEvent.KEYCODE_MEDIA_PAUSE)
+        }
+    }
+
     private fun mediaKey(code: Int) {
         val audio = appContext?.getSystemService(android.media.AudioManager::class.java) ?: return
         audio.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, code))

@@ -166,9 +166,14 @@ class DashSettingsActivity : ComponentActivity() {
 
                         Spacer(Modifier.padding(4.dp))
                         Text("Music", style = MaterialTheme.typography.titleMedium)
+                        val pauseOnDisconnect by DashPrefs.pauseOnDisconnect.collectAsState()
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Start music when the truck connects", Modifier.weight(1f))
                             Switch(checked = autoPlay, onCheckedChange = DashPrefs::setAutoPlay)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Stop music when unplugged from the car", Modifier.weight(1f))
+                            Switch(checked = pauseOnDisconnect, onCheckedChange = DashPrefs::setPauseOnDisconnect)
                         }
                     }
                 }

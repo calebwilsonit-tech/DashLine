@@ -128,6 +128,7 @@ object DashPrefs {
     private const val KEY_GEMINI = "gemini_key"
     private const val KEY_MODEL = "gemini_model"
     private const val KEY_AUTOPLAY = "autoplay"
+    private const val KEY_PAUSE_DISCONNECT = "pause_on_disconnect"
     private const val KEY_ASSISTANT = "assistant"
     private const val KEY_ACCENT = "accent"
 
@@ -159,6 +160,10 @@ object DashPrefs {
     /** Start the phone's music when the truck connects. */
     val autoPlay: StateFlow<Boolean> = _autoPlay.asStateFlow()
 
+    private val _pauseOnDisconnect = MutableStateFlow(true)
+    /** Stop the phone's music when unplugged from the truck. */
+    val pauseOnDisconnect: StateFlow<Boolean> = _pauseOnDisconnect.asStateFlow()
+
     private val _theme = MutableStateFlow(DashThemes.Carbon.id)
     val theme: StateFlow<String> = _theme.asStateFlow()
 
@@ -170,6 +175,7 @@ object DashPrefs {
         _theme.value = prefs()?.getString(KEY_THEME, null) ?: DashThemes.Carbon.id
         VideoTuning.load(prefs()?.getString(KEY_VIDEO, null))
         _autoPlay.value = prefs()?.getBoolean(KEY_AUTOPLAY, true) ?: true
+        _pauseOnDisconnect.value = prefs()?.getBoolean(KEY_PAUSE_DISCONNECT, true) ?: true
         _accent.value = prefs()?.getLong(KEY_ACCENT, 0L) ?: 0L
         _assistant.value = Assistant.entries.firstOrNull { it.name == prefs()?.getString(KEY_ASSISTANT, null) } ?: Assistant.PHONE
     }
@@ -187,6 +193,11 @@ object DashPrefs {
     fun setAutoPlay(on: Boolean) {
         _autoPlay.value = on
         prefs()?.edit()?.putBoolean(KEY_AUTOPLAY, on)?.apply()
+    }
+
+    fun setPauseOnDisconnect(on: Boolean) {
+        _pauseOnDisconnect.value = on
+        prefs()?.edit()?.putBoolean(KEY_PAUSE_DISCONNECT, on)?.apply()
     }
 
     /** The driver's own Google AI Studio key. Kept in this app's private storage only. */

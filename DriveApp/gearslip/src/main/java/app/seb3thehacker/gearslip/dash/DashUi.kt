@@ -113,6 +113,7 @@ fun DashUi() {
         PhoneMedia.start(context)
         CarCalls.start(context)
         onDispose {
+            if (DashPrefs.pauseOnDisconnect.value) PhoneMedia.pauseOnDisconnect(context)
             PhoneMedia.stop()
             CarCalls.stop()
             app.seb3thehacker.gearslip.car.CarAssistant.cancel()

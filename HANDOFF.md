@@ -78,6 +78,7 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **0.8.1:** Added "Stop music when unplugged from the car" toggle in phone Dashline Settings (`DashPrefs.pauseOnDisconnect`, default on). Pauses active media playback (`PhoneMedia.pauseOnDisconnect`) in `DashUi`'s `onDispose` when the USB car session ends.
 - 2026-11-23: **0.8.0: Maps parity complete + transitions, dashboard speedometer, themes, R8 shrink.**
   - *Maps parity (`MAPS_PARITY.md` 100% done for truck features):*
     - **Units & voice speed:** `DashNav.imperial` (mi/mph/ft vs km/km/h/m, passed to `NavSession.onLocation`, `SpeedBadge`, `miles()`, speeding alert) and `DashNav.voiceSpeed` (0.85x–1.3x via `DirectionsVoice.setSpeechRate`), configured in phone `DashSettingsActivity`.
