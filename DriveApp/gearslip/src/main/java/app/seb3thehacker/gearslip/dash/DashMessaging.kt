@@ -45,8 +45,14 @@ object DashMessages {
     /** Social apps that post conversation-styled notifications that aren't messages (Facebook memories). */
     private val NOT_CHAT = setOf("com.facebook.katana", "com.facebook.lite", "com.twitter.android", "com.reddit.frontpage")
 
-    fun isMessage(n: CarNotification): Boolean =
-        n.packageName !in NOT_CHAT && (n.packageName in CHAT_APPS || n.reply != null)
+    /** Chat apps that also post stories, likes and follows: only notifications you can reply to count. */
+    private val REPLY_ONLY = setOf("com.snapchat.android", "com.instagram.android")
+
+    fun isMessage(n: CarNotification): Boolean = when (n.packageName) {
+        in NOT_CHAT -> false
+        in REPLY_ONLY -> n.reply != null
+        else -> n.packageName in CHAT_APPS || n.reply != null
+    }
 
     /** Muted until the car disconnects, like Android Auto's per-conversation mute. */
     private val _muted = MutableStateFlow<Set<String>>(emptySet())
@@ -66,6 +72,35 @@ object DashMessages {
 data class DashContact(val name: String, val number: String, val starred: Boolean)
 
 object DashContacts {
+    /** A contact's saved street address ("Mom", "833 ..."). */
+    data class Address(val name: String, val address: String)
+
+    /** Contacts whose name matches [term] and who have a postal address saved. */
+    fun addresses(context: Context, term: String): List<Address> {
+        if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return emptyList()
+        val q = term.trim().lowercase().removePrefix("my ")
+        if (q.length < 2) return emptyList()
+        val out = mutableListOf<Address>()
+        runCatching {
+            context.contentResolver.query(
+                ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_URI,
+                arrayOf(
+                    ContactsContract.CommonDataKinds.StructuredPostal.DISPLAY_NAME,
+                    ContactsContract.CommonDataKinds.StructuredPostal.FORMATTED_ADDRESS,
+                ),
+                null, null, null,
+            )?.use { c ->
+                while (c.moveToNext()) {
+                    val name = c.getString(0) ?: continue
+                    val addr = c.getString(1)?.replace("\n", ", ")?.trim() ?: continue
+                    val n = name.lowercase()
+                    if (n == q || n.startsWith("$q ") || n.split(' ').any { it == q } || (q.length >= 3 && n.contains(q))) out += Address(name, addr)
+                }
+            }
+        }.onFailure { GearslipLog.w("dash contacts: addresses: ${it.message}") }
+        return out.distinctBy { it.address }.take(3)
+    }
+
     fun load(context: Context): List<DashContact> {
         if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return emptyList()
         val out = mutableListOf<DashContact>()

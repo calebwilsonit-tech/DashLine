@@ -78,6 +78,14 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **0.5.0.** Contacts' postal addresses (`DashContacts.addresses`, StructuredPostal) appear in suggestions, search and
+  "navigate to <name>"; a contact place (`id contact:`) is geocoded with the address lookup before routing. Saved trips (`DashPlaces.trips`).
+  The closing-time warning parses "Closes h:mm AM/PM" from the place status against the arrival time. Satellite style is a raster-only style
+  JSON on Google imagery, as Vela offers. `RoadAhead` strip shows traffic spans and cameras over the remaining route. `DashLinkActivity`
+  (geo:, maps.google.com, google.com/maps, maps.app.goo.gl, and SEND text) goes to `DashNav.openLink` (`ShortLinks.resolve` + `MapLinkParser`),
+  and `DashNav.showMap` switches the car screen to the Map. Verified on the Pixel: a shared Space Needle link switched the car screen to Map with the result.
+  Google-free switch = `NoGoogle.enabled` (phone settings). Messages: Snapchat/Instagram only count with a reply action (stories leaked in).
+  Leave-at/arrive-by is marked not-for-the-truck. **Not verified: contacts' addresses (needs the owner's contacts), the closing warning, satellite.**
 - 2026-11-23: **0.4.0: maps Phase 3.** `dash/DashOffline.kt` installs Vela's routing regions (manifest `VelaLinks.obfManifest()`, 447 regions,
   e.g. Washington 93 MB) into `filesDir/obf/<id>.obf` + `index.json` (the same layout as Vela's ObfStore). `OfflineRoot.dir` is set before
   `CoreModule.routeEngine`, which re-reads the index when it changes. UI is in the phone's Dashline settings (suggests the smallest bbox covering the last

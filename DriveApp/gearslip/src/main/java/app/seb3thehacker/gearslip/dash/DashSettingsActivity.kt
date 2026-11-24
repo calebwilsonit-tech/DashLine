@@ -103,6 +103,16 @@ class DashSettingsActivity : ComponentActivity() {
                         }) { Text(if (saved) "Saved ✓" else "Save") }
 
                         Spacer(Modifier.padding(4.dp))
+                        Text("Maps", style = MaterialTheme.typography.titleMedium)
+                        remember { DashNav.init(this@DashSettingsActivity); true }
+                        val noGoogle by DashNav.noGoogle.collectAsState()
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Google-free maps")
+                                Text("Search and routes from open data only: no live traffic, weaker business search.", style = MaterialTheme.typography.bodySmall)
+                            }
+                            Switch(checked = noGoogle, onCheckedChange = DashNav::setNoGoogle)
+                        }
                         OfflineMaps()
 
                         Spacer(Modifier.padding(4.dp))

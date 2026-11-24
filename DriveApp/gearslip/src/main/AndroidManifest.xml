@@ -359,6 +359,36 @@
             </intent-filter>
         </activity>
 
+        <!-- Dashline: map links from other apps (Open with / Share) go to the car's Map. -->
+        <activity
+            android:name=".dash.DashLinkActivity"
+            android:exported="true"
+            android:label="Dashline map"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="geo" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="maps.google.com" />
+                <data android:host="www.google.com" android:pathPrefix="/maps" />
+                <data android:host="maps.app.goo.gl" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
         <!-- Dashline: turns the phone's screen on and past a trusted-device lock screen so myQ
              can be opened while the phone sits dark in a pocket or mount. -->
         <activity

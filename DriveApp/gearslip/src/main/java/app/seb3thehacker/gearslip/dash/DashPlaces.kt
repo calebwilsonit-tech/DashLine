@@ -43,6 +43,22 @@ object DashPlaces {
     private val _recents = MutableStateFlow<List<Spot>>(emptyList())
     val recents: StateFlow<List<Spot>> = _recents.asStateFlow()
 
+    /** A saved trip: a destination and the stops on the way. */
+    @Immutable
+    data class Trip(val name: String, val dest: Spot, val stops: List<Spot>)
+
+    private val _trips = MutableStateFlow<List<Trip>>(emptyList())
+    val trips: StateFlow<List<Trip>> = _trips.asStateFlow()
+
+    fun saveTrip(dest: Place, stops: List<Place>) {
+        val name = if (stops.isEmpty()) dest.name else "${dest.name} via ${stops.joinToString(", ") { it.name }}"
+        val trip = Trip(name, Spot.of(dest, kind = "trip"), stops.map { Spot.of(it, kind = "trip") })
+        _trips.value = _trips.value.filterNot { it.name == trip.name } + trip
+        write()
+    }
+
+    fun removeTrip(t: Trip) { _trips.value = _trips.value - t; write() }
+
     private var context: Context? = null
 
     fun init(c: Context) {
@@ -51,6 +67,14 @@ object DashPlaces {
         val prefs = prefs() ?: return
         _saved.value = read(prefs.getString("saved", null))
         _recents.value = read(prefs.getString("recents", null))
+        _trips.value = runCatching {
+            val a = JSONArray(prefs.getString("trips", null) ?: "[]")
+            (0 until a.length()).map { i ->
+                val o = a.getJSONObject(i)
+                val st = o.getJSONArray("stops")
+                Trip(o.getString("name"), Spot.from(o.getJSONObject("dest")), (0 until st.length()).map { Spot.from(st.getJSONObject(it)) })
+            }
+        }.getOrDefault(emptyList())
     }
 
     fun home() = _saved.value.firstOrNull { it.kind == "home" }
@@ -107,6 +131,11 @@ object DashPlaces {
         prefs.edit()
             .putString("saved", JSONArray().apply { _saved.value.forEach { put(it.json()) } }.toString())
             .putString("recents", JSONArray().apply { _recents.value.forEach { put(it.json()) } }.toString())
+            .putString("trips", JSONArray().apply {
+                _trips.value.forEach { t ->
+                    put(JSONObject().put("name", t.name).put("dest", t.dest.json()).put("stops", JSONArray().apply { t.stops.forEach { put(it.json()) } }))
+                }
+            }.toString())
             .apply()
     }
 

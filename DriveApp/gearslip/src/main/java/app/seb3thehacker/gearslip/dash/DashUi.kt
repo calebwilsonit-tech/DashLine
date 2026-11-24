@@ -156,6 +156,8 @@ fun DashUi() {
             }
         }
     }
+    // A map link shared from another app opens the Map screen.
+    LaunchedEffect(Unit) { DashNav.showMap.collect { app.seb3thehacker.gearslip.GearslipLog.i("dash: show map signal $it"); if (it > 0) screen = DashScreen.Map } }
     // An incoming call takes over whatever is up, like a phone would.
     val call by CarCalls.state.collectAsState()
     LaunchedEffect(call is CallUiState.Ringing) {

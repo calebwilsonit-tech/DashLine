@@ -112,6 +112,14 @@ object DashNav {
     val cameraAhead = MutableStateFlow(false)
 
     private var prefs: android.content.SharedPreferences? = null
+    private var appContext: Context? = null
+
+    /** Ask the car screen to show the Map (a shared link, "navigate to"). */
+    val showMap = MutableStateFlow(0)
+
+    /** Google off: search and routes from open data only (Vela's NoGoogle). */
+    val noGoogle = MutableStateFlow(false)
+    fun setNoGoogle(on: Boolean) { noGoogle.value = on; app.vela.core.data.NoGoogle.enabled = on; prefs?.edit()?.putBoolean("noGoogle", on)?.apply() }
 
     /** Posted limit where the truck is (from an installed offline region), mph; null when unknown. */
     val speedLimitMph = MutableStateFlow<Int?>(null)
@@ -142,10 +150,13 @@ object DashNav {
     fun init(context: Context) {
         if (ready) return
         val c = context.applicationContext
+        appContext = c
         DashPlaces.init(c)
         DashOffline.init(c) // before the route engine: it reads OfflineRoot.dir
         prefs = c.getSharedPreferences("dashline_nav", Context.MODE_PRIVATE).also { p ->
             mapStyle.value = p.getString("mapStyle", "auto") ?: "auto"
+            noGoogle.value = p.getBoolean("noGoogle", false)
+            app.vela.core.data.NoGoogle.enabled = noGoogle.value
             p.getString("activeDrive", null)?.let { raw ->
                 runCatching {
                     val o = org.json.JSONObject(raw)
@@ -260,7 +271,8 @@ object DashNav {
     fun suggest(term: String) {
         suggestJob?.cancel()
         val t = term.trim()
-        val local = DashPlaces.matching(t).map { it.place() }
+        val contacts = appContext?.let { DashContacts.addresses(it, t) }.orEmpty().map { contactPlace(it) }
+        val local = DashPlaces.matching(t).map { it.place() } + contacts
         _suggestions.value = Suggestions(t, local)
         if (!ready || t.length < 2) return
         suggestJob = scope.launch {
@@ -305,6 +317,11 @@ object DashNav {
             _state.value = State(Phase.RESULTS, q, results = listOf(spot.place()))
             return
         }
+        val contacts = appContext?.let { DashContacts.addresses(it, q) }.orEmpty()
+        if (contacts.isNotEmpty()) {
+            _state.value = State(Phase.RESULTS, q, results = contacts.map { contactPlace(it) })
+            return
+        }
         _state.value = State(Phase.SEARCHING, query = q)
         scope.launch {
             runCatching {
@@ -336,6 +353,16 @@ object DashNav {
 
     /** Routes from here to [place]: up to four, with traffic. */
     fun preview(place: Place) {
+        if (place.id.startsWith("contact:")) {
+            // A contact's address: found on the map first (the same address search), then routed.
+            _state.value = _state.value.copy(phase = Phase.SEARCHING, query = place.address.orEmpty())
+            scope.launch {
+                val hit = withContext(Dispatchers.IO) { runCatching { lookup(place.address.orEmpty()).first.firstOrNull() }.getOrNull() }
+                if (hit == null) _state.value = State(Phase.ERROR, error = "Couldn't find ${place.name}'s address on the map")
+                else preview(hit.copy(name = place.name, address = hit.address ?: place.address))
+            }
+            return
+        }
         val from = _fix.value?.at
         if (from == null) {
             _state.value = _state.value.copy(phase = Phase.ERROR, error = "Waiting for the phone's GPS")
@@ -515,6 +542,67 @@ object DashNav {
         if (s.stops.size < 2) return
         _state.value = s.copy(stops = s.stops.reversed())
         preview(dest)
+    }
+
+    private fun contactPlace(a: DashContacts.Address) =
+        Place(id = "contact:${a.name}", name = "${a.name} (contact)", location = LatLng(0.0, 0.0), address = a.address)
+
+    /** A saved trip: its stops and destination, routed from here. */
+    fun startTrip(t: DashPlaces.Trip) {
+        _state.value = State(stops = t.stops.map { it.place() }, destination = t.dest.place())
+        preview(t.dest.place())
+    }
+
+    fun saveTrip() {
+        val s = _state.value
+        val dest = s.destination ?: return
+        DashPlaces.saveTrip(dest, s.stops)
+    }
+
+    /**
+     * A map link shared from another app (a Google Maps link, a geo: URI, coordinates): parsed with
+     * Vela's MapLinkParser (short links expanded first), then shown on the car's Map screen.
+     */
+    fun openLink(raw: String) {
+        if (!ready) return
+        scope.launch {
+            val url = Regex("https?://\\S+").find(raw)?.value ?: raw.trim()
+            val expanded = if (app.vela.core.data.ShortLinks.isShortener(url)) {
+                withContext(Dispatchers.IO) { runCatching { app.vela.core.data.ShortLinks.resolve(http, url, calibration.current().userAgent) }.getOrNull() } ?: url
+            } else url
+            val link = app.vela.core.data.MapLinkParser.parse(expanded) ?: app.vela.core.data.MapLinkParser.parseBareCoordinate(raw.trim())
+            GearslipLog.i("nav: shared link -> ${if (link == null) "not a map link" else "parsed"}")
+            showMap.value++
+            val lat = link?.lat
+            val lng = link?.lng
+            when {
+                lat != null && lng != null ->
+                    preview(Place(id = "link:$lat,$lng", name = link.query ?: "Shared location", location = LatLng(lat, lng)))
+                !link?.query.isNullOrBlank() -> search(link!!.query!!)
+                else -> search(raw.trim().take(120))
+            }
+        }
+    }
+
+    /**
+     * "Closes 8:30 PM" read off the place's status, against the arrival time: a warning when the
+     * place closes before, or within 15 minutes after, the truck gets there. Null when fine or unknown.
+     */
+    fun closingWarning(status: String?, arriveAtMs: Long): String? {
+        val m = Regex("""[Cc]loses\s+(\d{1,2})(?::(\d{2}))?\s*([AaPp])\.?[Mm]""").find(status ?: return null) ?: return null
+        var h = m.groupValues[1].toInt() % 12
+        if (m.groupValues[3].equals("p", true)) h += 12
+        val min = m.groupValues[2].ifEmpty { "0" }.toInt()
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, h); set(java.util.Calendar.MINUTE, min); set(java.util.Calendar.SECOND, 0)
+            if (timeInMillis < System.currentTimeMillis() - 3_600_000) add(java.util.Calendar.DAY_OF_MONTH, 1)
+        }
+        val left = (cal.timeInMillis - arriveAtMs) / 60_000
+        return when {
+            left < 0 -> "Closes before you get there"
+            left < 15 -> "Closes $left min after you arrive"
+            else -> null
+        }
     }
 
     fun choose(index: Int) {

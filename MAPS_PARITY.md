@@ -19,7 +19,7 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Search along the route, with minutes added per stop (tap one to add it as a stop) | ✅ 0.3.0 |
 | Open now filter; sort by best, nearest, top rated | ✅ 0.3.0 (price filter ⬜) |
 | Chain's other branches, "More results", "Search this area" | ⬜ Next |
-| Contacts' addresses in search | ⬜ Next |
+| Contacts' addresses in search and voice ("navigate to Mom") | ✅ 0.5.0 |
 
 ## Places
 | Feature | Status |
@@ -28,7 +28,7 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Recent places | ✅ 0.2.0 |
 | Place card: open/closed, closing time, phone (Call), rating, gas prices | ✅ 0.3.0 |
 | Reviews, photos, menus, popular times, Street View | ➖ |
-| Share place / Google Maps links from other apps | ⬜ Next |
+| Google Maps links and geo: from other apps (Open with / Share) go to the car's Map | ✅ 0.5.0 |
 
 ## Routes
 | Feature | Status |
@@ -38,10 +38,10 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Route line colored by traffic | ✅ 0.2.0 |
 | Stops: add (before Go or during the drive), remove, reverse; round trip | ✅ 0.3.0 / 0.4.0 (drag to reorder ⬜) |
 | Avoid tolls / highways (remembered) | ✅ 0.3.0 (ferries, no-toll comparison ⬜) |
-| Depart at / arrive by | ⬜ Next |
+| Depart at / arrive by | ➖ (a trip-planning screen, not for the driver's seat) |
 | Step list before starting | ✅ 0.3.0 |
-| Save a route | ⬜ Next |
-| Closing-time warning at the destination | ⬜ Next |
+| Save a trip (destination and stops) | ✅ 0.5.0 |
+| Warning when the destination closes before or soon after you arrive | ✅ 0.5.0 |
 | Walking, bike, transit, GPX tracks | ➖ |
 
 ## Navigation
@@ -62,7 +62,7 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Voice detail levels (everything / brief / highway exits only) | ✅ 0.3.0 |
 | Step list during the drive (tap the turn card) | ✅ 0.3.0 |
 | Pause a drive | ✅ 0.4.0 |
-| Road-ahead bar, turn arrows on the route, cross-street callouts, road shields on the line | ⬜ Next |
+| Road-ahead bar (traffic and cameras) | ✅ 0.5.0 (turn arrows on the route, callouts, shields on the line ⬜) |
 | Speed cameras (OpenStreetMap, on the map, banner and spoken) | ✅ 0.3.0 (red-light cameras ⬜) |
 | Resume a drive after a restart | ✅ 0.4.0 |
 | Gas stations only on the map while driving | ⬜ Next |
@@ -72,7 +72,7 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | --- | --- |
 | Open vector map, day/night (follows the theme) | ✅ |
 | Your position with heading arrow | ✅ 0.4.0 |
-| Map styles: auto, Liberty, Bright, Positron, Fiord, Dark | ✅ 0.4.0 (satellite ⬜) |
+| Map styles: auto, Liberty, Bright, Positron, Fiord, Dark, Satellite | ✅ 0.4.0 / 0.5.0 |
 | Live traffic overlay while browsing (🚦 toggle) | ✅ 0.3.0 |
 | Place icons from Vela's open data | ⬜ Next |
 | 3D buildings, tilt | ⬜ Next |
@@ -82,5 +82,5 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Feature | Status |
 | --- | --- |
 | Units, voice speed | ⬜ Next |
-| Google-free mode | ⬜ Next |
+| Google-free mode (phone settings) | ✅ 0.5.0 |
 | Diagnostics, trip recording | ➖ |

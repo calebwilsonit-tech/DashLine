@@ -114,6 +114,7 @@ internal object DashMapHolder {
     /** The OpenFreeMap style for a choice ("auto" follows the theme's light or dark). */
     fun styleUrl(choice: String, dark: Boolean) = when (choice) {
         "liberty", "bright", "positron", "fiord", "dark" -> "https://tiles.openfreemap.org/styles/$choice"
+        "satellite" -> SATELLITE
         else -> if (dark) DARK_STYLE else LIGHT_STYLE
     }
 
@@ -121,7 +122,8 @@ internal object DashMapHolder {
         val m = map ?: run { pendingUrl = url; return }
         if (styleUrl == url && style != null) return
         styleUrl = url
-        m.setStyle(Style.Builder().fromUri(url)) { s ->
+        val builder = if (url == SATELLITE) Style.Builder().fromJson(SATELLITE_JSON) else Style.Builder().fromUri(url)
+        m.setStyle(builder) { s ->
             style = s
             s.addImage(ARROW_IMG, arrowBitmap())
             // Google's live traffic, as Vela draws it while browsing (hidden during a drive: the
@@ -317,6 +319,8 @@ internal object DashMapHolder {
     private const val ME_SRC = "dash-me"
     private const val ME_DOT = "dash-me-dot"
     private const val ME_HALO = "dash-me-halo"
+    private const val SATELLITE = "satellite"
+    private val SATELLITE_JSON = """{"version":8,"sources":{"sat":{"type":"raster","tiles":["https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"],"tileSize":256,"maxzoom":20}},"layers":[{"id":"sat","type":"raster","source":"sat"}]}"""
     private const val ME_ARROW = "dash-me-arrow"
     private const val ARROW_IMG = "dash-arrow"
 
@@ -468,7 +472,7 @@ private fun MapButtons(modifier: Modifier, navigating: Boolean) {
         RoundButton(if (northUp) "N" else "⬆", highlight = northUp) { DashNav.northUp.value = !northUp }
         val styleChoice by DashNav.mapStyle.collectAsState()
         RoundButton("🗺") {
-            val order = listOf("auto", "liberty", "bright", "positron", "fiord", "dark")
+            val order = listOf("auto", "liberty", "bright", "positron", "fiord", "dark", "satellite")
             DashNav.setMapStyle(order[(order.indexOf(styleChoice) + 1).mod(order.size)])
         }
         if (!navigating) {
@@ -497,6 +501,7 @@ private fun WhereTo(modifier: Modifier, error: String, onType: () -> Unit) {
     val t = LocalDashTheme.current
     val saved by DashPlaces.saved.collectAsState()
     val recents by DashPlaces.recents.collectAsState()
+    val trips by DashPlaces.trips.collectAsState()
     Card(modifier.width(320.dp)) {
         Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -516,6 +521,8 @@ private fun WhereTo(modifier: Modifier, error: String, onType: () -> Unit) {
                 item { SpotRow("⌂", "Home", home?.address ?: "Not set: save Home from a place's Go card", enabled = home != null) { home?.let { DashNav.preview(it.place()) } } }
                 item { SpotRow("▣", "Work", work?.address ?: "Not set: save Work from a place's Go card", enabled = work != null) { work?.let { DashNav.preview(it.place()) } } }
                 items(favs.size) { i -> SpotRow("★", favs[i].name, favs[i].address) { DashNav.preview(favs[i].place()) } }
+                if (trips.isNotEmpty()) item { Label("Trips", 13.sp, t.accent, FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, top = 4.dp)) }
+                items(trips.size) { i -> SpotRow("⇢", trips[i].name, "${trips[i].stops.size} stop(s)") { DashNav.startTrip(trips[i]) } }
                 if (recents.isNotEmpty()) item { Label("Recent", 13.sp, t.accent, FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, top = 4.dp)) }
                 items(recents.size) { i -> SpotRow("↺", recents[i].name, recents[i].address) { DashNav.preview(recents[i].place()) } }
             }
@@ -722,6 +729,10 @@ private fun Preview(modifier: Modifier) {
                 Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         d.statusText?.let { Label(it, 14.sp, if (d.openNow == false) Color(0xFFFF6B6B) else Color(0xFF34C759), FontWeight.SemiBold) }
+                        ui.route?.let { r ->
+                            DashNav.closingWarning(d.statusText, System.currentTimeMillis() + ((r.durationInTrafficSeconds ?: r.durationSeconds) * 1000).toLong())
+                                ?.let { Label("⚠ $it", 13.sp, Color(0xFFFFB300), FontWeight.SemiBold) }
+                        }
                         Label(listOfNotNull(d.fuelPrice, d.rating?.let { "★ %.1f (${d.reviewCount ?: 0})".format(it) }, d.category).joinToString(" · "), 13.sp, t.textDim)
                     }
                     d.phone?.let { phone ->
@@ -750,6 +761,7 @@ private fun Preview(modifier: Modifier) {
                     Chip("Avoid highways", highways) { DashNav.setAvoidHighways(!highways) }
                     Chip("Steps", false) { steps = true }
                     Chip("↺ Round trip", false) { DashNav.roundTrip() }
+                    Chip("💾 Save trip", false) { DashNav.saveTrip(); options = false }
                     if (ui.stops.size >= 2) Chip("⇅ Reverse stops", false) { DashNav.reverseStops() }
                     Chip("Close", false) { options = false }
                 }
@@ -847,8 +859,48 @@ private fun DriveScreen() {
             }
         }
         if (addingStop) AlongRouteChips(Modifier.align(Alignment.BottomCenter).padding(start = 10.dp, end = 10.dp, bottom = 80.dp).fillMaxWidth()) { addingStop = false }
-        SpeedBadge(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, bottom = 84.dp))
+        SpeedBadge(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, bottom = 92.dp))
+        RoadAhead(Modifier.align(Alignment.BottomCenter).padding(start = 10.dp, end = 10.dp, bottom = 78.dp).fillMaxWidth().height(10.dp))
         TripBar(Modifier.align(Alignment.BottomCenter).padding(10.dp), onAddStop = { addingStop = !addingStop })
+    }
+}
+
+/**
+ * The rest of the route as one strip, like Vela's road-ahead bar: traffic (orange, red), speed
+ * cameras (white ticks) and stops (blue ticks), with you at the left edge.
+ */
+@Composable
+private fun RoadAhead(modifier: Modifier) {
+    val nav by DashNav.session.state.collectAsState()
+    val cams by DashNav.cameras.collectAsState()
+    val route = nav.route ?: return
+    val line = route.polyline
+    if (line.size < 2) return
+    val traveled = nav.nav.traveledM
+    val remaining = (route.distanceMeters - traveled).coerceAtLeast(1.0)
+    // Where along the route each camera sits (meters from the start).
+    val camAt = remember(route, cams) {
+        val cum = DoubleArray(line.size)
+        for (i in 1 until line.size) cum[i] = cum[i - 1] + metersBetween(line[i - 1], line[i])
+        cams.mapNotNull { c -> line.indices.minByOrNull { metersBetween(line[it], c) }?.let { cum[it] } }
+    }
+    androidx.compose.foundation.Canvas(modifier.clip(RoundedCornerShape(5.dp))) {
+        drawRect(Color(0xFF3D8BFF))
+        fun x(m: Double) = (((m - traveled) / remaining).coerceIn(0.0, 1.0) * size.width).toFloat()
+        for (span in route.trafficSpans) {
+            if (span.level < 1) continue
+            val a = x(span.startMeters)
+            val b = x(span.startMeters + span.lengthMeters)
+            if (b <= 0f) continue
+            drawRect(
+                when (span.level) { 1 -> Color(0xFFF5A623); 2 -> Color(0xFFE53935); else -> Color(0xFF8B1A1A) },
+                topLeft = androidx.compose.ui.geometry.Offset(a, 0f),
+                size = androidx.compose.ui.geometry.Size((b - a).coerceAtLeast(2f), size.height),
+            )
+        }
+        camAt.filter { it > traveled }.forEach { m ->
+            drawRect(Color.White, topLeft = androidx.compose.ui.geometry.Offset(x(m) - 1.5f, 0f), size = androidx.compose.ui.geometry.Size(3f, size.height))
+        }
     }
 }
 
