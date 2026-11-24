@@ -78,6 +78,9 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **v0.1.1** pauses music during any voice activity (`VoiceDuck` in `dash/PhoneMedia.kt`, driven from DashUi by
+  combining VoiceReply/DashText/CarAssistant/PhoneAssistant state). VoiceFocus's transient-exclusive focus alone did not pause
+  YouTube Music. **The in-app updater was verified: the owner's phone went 0.1.0 → 0.1.1 through Settings → Updates → Check now.**
 - 2026-11-23: **Maps, rebrand, updater, publishing.**
   - **Maps = Vela's `:core` engine + Dashline's own map UI.** Vela (github.com/PimpinPumpkin/Vela, GPL-3.0, compatible with
     AGPL-3.0) is cloned in `upstream/Vela` (git-ignored). Its `:core` is built with Vela's own toolchain
