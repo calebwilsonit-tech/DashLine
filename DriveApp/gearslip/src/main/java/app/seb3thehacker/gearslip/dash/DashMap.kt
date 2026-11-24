@@ -84,6 +84,7 @@ internal object DashMapHolder {
             if (styleUrl != url) setStyle(url)
             return v
         }
+        appCtx = context.applicationContext
         MapLibre.getInstance(context.applicationContext)
         val options = MapLibreMapOptions.createFromAttributes(context).textureMode(true)
         return MapView(context.applicationContext, options).apply {
@@ -118,11 +119,59 @@ internal object DashMapHolder {
         else -> if (dark) DARK_STYLE else LIGHT_STYLE
     }
 
+    private var appCtx: Context? = null
+
+    /**
+     * Offline with a downloaded map-tile file: the same OpenFreeMap style (saved while online),
+     * with its tile source pointed at the file. Null when online or nothing covers the spot.
+     */
+    private fun offlineStyleJson(url: String): String? {
+        if (DashNav.online.value || url == SATELLITE) return null
+        val ctx = appCtx ?: return null
+        val at = DashNav.fix.value?.at ?: return null
+        val file = DashOffline.tilesFor(at.lat, at.lng) ?: return null
+        val saved = java.io.File(ctx.filesDir, "styles/${url.substringAfterLast('/')}.json").takeIf { it.exists() } ?: return null
+        return runCatching {
+            val o = org.json.JSONObject(saved.readText())
+            val sources = o.getJSONObject("sources")
+            sources.getJSONObject("openmaptiles").apply { remove("tiles"); put("url", "pmtiles://file://${file.absolutePath}") }
+            // The shaded-relief raster is online-only.
+            sources.remove("ne2_shaded")
+            val layers = o.getJSONArray("layers")
+            val kept = org.json.JSONArray()
+            for (i in 0 until layers.length()) layers.getJSONObject(i).let { if (it.optString("source") != "ne2_shaded") kept.put(it) }
+            o.put("layers", kept)
+            GearslipLog.i("map: offline, drawing from downloaded tiles")
+            o.toString()
+        }.getOrNull()
+    }
+
+    /** Keeps a copy of each OpenFreeMap style for offline use. */
+    private fun saveStyle(url: String) {
+        val ctx = appCtx ?: return
+        if (!url.startsWith("https://tiles.openfreemap.org/styles/")) return
+        val f = java.io.File(ctx.filesDir, "styles/${url.substringAfterLast('/')}.json")
+        if (f.exists() && System.currentTimeMillis() - f.lastModified() < 7 * 86_400_000L) return
+        Thread {
+            runCatching {
+                val body = java.net.URL(url).openStream().use { it.readBytes() }
+                f.parentFile?.mkdirs(); f.writeBytes(body)
+            }
+        }.start()
+    }
+
     fun setStyle(url: String) {
         val m = map ?: run { pendingUrl = url; return }
-        if (styleUrl == url && style != null) return
-        styleUrl = url
-        val builder = if (url == SATELLITE) Style.Builder().fromJson(SATELLITE_JSON) else Style.Builder().fromUri(url)
+        val offline = offlineStyleJson(url)
+        val key = if (offline != null) "$url#offline" else url
+        if (styleUrl == key && style != null) return
+        styleUrl = key
+        if (offline == null) saveStyle(url)
+        val builder = when {
+            offline != null -> Style.Builder().fromJson(offline)
+            url == SATELLITE -> Style.Builder().fromJson(SATELLITE_JSON)
+            else -> Style.Builder().fromUri(url)
+        }
         m.setStyle(builder) { s ->
             style = s
             s.addImage(ARROW_IMG, arrowBitmap())
@@ -201,6 +250,42 @@ internal object DashMapHolder {
                     PropertyFactory.iconIgnorePlacement(true),
                 ),
             ).also { s.getLayer(ME_ARROW)?.setProperties(PropertyFactory.visibility(Property.VISIBLE)) }
+            // Road numbers along the route ("I 5"), like the shields Vela draws on the line.
+            s.addSource(GeoJsonSource(SHIELD_SRC))
+            s.addLayer(
+                org.maplibre.android.style.layers.SymbolLayer(SHIELD_LAYER, SHIELD_SRC).withProperties(
+                    PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE),
+                    PropertyFactory.symbolSpacing(350f),
+                    PropertyFactory.textField(Expression.get("ref")),
+                    PropertyFactory.textFont(arrayOf("Noto Sans Regular")),
+                    PropertyFactory.textSize(12f),
+                    PropertyFactory.textColor("#FFFFFF"),
+                    PropertyFactory.textHaloColor("#1C4FB8"),
+                    PropertyFactory.textHaloWidth(3f),
+                    PropertyFactory.textRotationAlignment(Property.TEXT_ROTATION_ALIGNMENT_VIEWPORT),
+                ),
+            )
+            // The next turn drawn on the route: a white stroke through it ending in an arrowhead.
+            s.addImage(TURN_IMG, turnHeadBitmap())
+            s.addSource(GeoJsonSource(TURN_SRC))
+            s.addLayer(
+                LineLayer(TURN_LINE, TURN_SRC).withProperties(
+                    PropertyFactory.lineColor("#FFFFFF"),
+                    PropertyFactory.lineWidth(5f),
+                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+                ).also { it.setFilter(Expression.eq(Expression.geometryType(), Expression.literal("LineString"))) },
+            )
+            s.addLayer(
+                org.maplibre.android.style.layers.SymbolLayer(TURN_HEAD, TURN_SRC).withProperties(
+                    PropertyFactory.iconImage(TURN_IMG),
+                    PropertyFactory.iconRotate(Expression.get("b")),
+                    PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
+                    PropertyFactory.iconAllowOverlap(true),
+                    PropertyFactory.iconIgnorePlacement(true),
+                ).also { it.setFilter(Expression.eq(Expression.geometryType(), Expression.literal("Point"))) },
+            )
+            lastTurnKey = null
             s.addSource(GeoJsonSource(CAM_SRC))
             s.addLayer(
                 CircleLayer(CAM_DOT, CAM_SRC).withProperties(
@@ -252,6 +337,7 @@ internal object DashMapHolder {
             val line = route?.polyline.orEmpty()
             s.getSourceAs<GeoJsonSource>(ROUTE_SRC)?.setGeoJson(lineFeature(line))
             s.getSourceAs<GeoJsonSource>(TRAFFIC_SRC)?.setGeoJson(trafficFeatures(route))
+            s.getSourceAs<GeoJsonSource>(SHIELD_SRC)?.setGeoJson(shieldFeatures(route))
         }
         if (alts !== lastAlts) {
             lastAlts = alts
@@ -304,6 +390,58 @@ internal object DashMapHolder {
         s.getSourceAs<GeoJsonSource>(CAM_SRC)?.setGeoJson(FeatureCollection.fromFeatures(cams.map { Feature.fromGeometry(Point.fromLngLat(it.lng, it.lat)) }))
     }
 
+    private var lastTurnKey: String? = null
+
+    /** Draws the turn after [stepIndex] on the route; nothing when [route] is null. */
+    fun drawTurn(route: Route?, stepIndex: Int) {
+        val s = style ?: return
+        val step = route?.maneuvers?.getOrNull(stepIndex + 1)
+        val key = if (route == null || step == null) "" else "${System.identityHashCode(route)}:$stepIndex"
+        if (key == lastTurnKey) return
+        lastTurnKey = key
+        val src = s.getSourceAs<GeoJsonSource>(TURN_SRC) ?: return
+        if (route == null || step == null || step.type == ManeuverType.ARRIVE || step.type == ManeuverType.CONTINUE || step.type == ManeuverType.STRAIGHT) {
+            src.setGeoJson(FeatureCollection.fromFeatures(emptyList())); return
+        }
+        val line = route.polyline
+        if (line.size < 2) return
+        val at = line.indices.minByOrNull { metersBetween(line[it], step.location) } ?: return
+        fun walk(from: Int, dir: Int, meters: Double): List<app.vela.core.model.LatLng> {
+            val out = mutableListOf(line[from]); var i = from; var d = 0.0
+            while (d < meters && i + dir in line.indices) { d += metersBetween(line[i], line[i + dir]); i += dir; out += line[i] }
+            return out
+        }
+        val pts = walk(at, -1, 35.0).reversed() + walk(at, 1, 25.0).drop(1)
+        if (pts.size < 2) return
+        val a = pts[pts.size - 2]; val b = pts.last()
+        val bearing = Math.toDegrees(Math.atan2(
+            Math.sin(Math.toRadians(b.lng - a.lng)) * Math.cos(Math.toRadians(b.lat)),
+            Math.cos(Math.toRadians(a.lat)) * Math.sin(Math.toRadians(b.lat)) -
+                Math.sin(Math.toRadians(a.lat)) * Math.cos(Math.toRadians(b.lat)) * Math.cos(Math.toRadians(b.lng - a.lng)),
+        ))
+        val head = Feature.fromGeometry(Point.fromLngLat(b.lng, b.lat)).apply { addNumberProperty("b", bearing) }
+        src.setGeoJson(FeatureCollection.fromFeatures(listOf(lineFeature(pts), head)))
+    }
+
+    /** One line per stretch of numbered road, labeled with its number. */
+    private fun shieldFeatures(route: Route?): FeatureCollection {
+        val r = route ?: return FeatureCollection.fromFeatures(emptyList())
+        val line = r.polyline
+        val steps = r.maneuvers
+        if (line.size < 2 || steps.isEmpty()) return FeatureCollection.fromFeatures(emptyList())
+        val idx = steps.map { m -> line.indices.minByOrNull { metersBetween(line[it], m.location) } ?: 0 }
+        val out = mutableListOf<Feature>()
+        steps.forEachIndexed { i, m ->
+            val ref = m.ref?.takeIf { it.isNotBlank() } ?: return@forEachIndexed
+            val from = idx[i]; val to = idx.getOrNull(i + 1) ?: line.lastIndex
+            if (to - from < 2) return@forEachIndexed
+            out += lineFeature(line.subList(from, to + 1)).apply { addStringProperty("ref", ref) }
+        }
+        return FeatureCollection.fromFeatures(out)
+    }
+
+    fun center(): app.vela.core.model.LatLng? = map?.cameraPosition?.target?.let { app.vela.core.model.LatLng(it.latitude, it.longitude) }
+
     fun zoomBy(delta: Double) {
         DashNav.camera.value = DashNav.Camera.FREE
         map?.animateCamera(CameraUpdateFactory.zoomBy(delta), 250)
@@ -320,7 +458,23 @@ internal object DashMapHolder {
     private const val ME_DOT = "dash-me-dot"
     private const val ME_HALO = "dash-me-halo"
     private const val SATELLITE = "satellite"
-    private val SATELLITE_JSON = """{"version":8,"sources":{"sat":{"type":"raster","tiles":["https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"],"tileSize":256,"maxzoom":20}},"layers":[{"id":"sat","type":"raster","source":"sat"}]}"""
+    private val SATELLITE_JSON = """{"version":8,"glyphs":"https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf","sources":{"sat":{"type":"raster","tiles":["https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"],"tileSize":256,"maxzoom":20}},"layers":[{"id":"sat","type":"raster","source":"sat"}]}"""
+    private const val SHIELD_SRC = "dash-shields"
+    private const val SHIELD_LAYER = "dash-shields-layer"
+    private const val TURN_SRC = "dash-turn"
+    private const val TURN_LINE = "dash-turn-line"
+    private const val TURN_HEAD = "dash-turn-head"
+    private const val TURN_IMG = "dash-turn-img"
+
+    private fun turnHeadBitmap(): android.graphics.Bitmap {
+        val size = 48
+        val bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(bmp)
+        val path = android.graphics.Path().apply { moveTo(size / 2f, 2f); lineTo(size - 4f, size - 6f); lineTo(4f, size - 6f); close() }
+        c.drawPath(path, android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFFFFF.toInt() })
+        return bmp
+    }
+
     private const val ME_ARROW = "dash-me-arrow"
     private const val ARROW_IMG = "dash-arrow"
 
@@ -360,7 +514,8 @@ internal fun DashMapView(modifier: Modifier, compact: Boolean) {
     remember { DashNav.init(context); true }
     val styleChoice by DashNav.mapStyle.collectAsState()
     val url = DashMapHolder.styleUrl(styleChoice, dark)
-    LaunchedEffect(url) { DashMapHolder.setStyle(url) }
+    val online by DashNav.online.collectAsState()
+    LaunchedEffect(url, online) { DashMapHolder.setStyle(url) }
     val fix by DashNav.fix.collectAsState()
     val nav by DashNav.session.state.collectAsState()
     val ui by DashNav.state.collectAsState()
@@ -385,6 +540,7 @@ internal fun DashMapView(modifier: Modifier, compact: Boolean) {
             else -> emptyList()
         }
         DashMapHolder.draw(route, alts, fix?.at, pins, fix?.bearing?.takeIf { (fix?.speedMps ?: 0f) > 1.5f })
+        DashMapHolder.drawTurn(if (nav.navigating) nav.route else null, nav.nav.stepIndex)
         val f = fix
         val overviewLine = route?.polyline ?: pins
         when {
@@ -652,6 +808,12 @@ private fun Results(modifier: Modifier, query: String, places: List<Place>) {
                 Label(if (ui.alongRoute) "\"$query\" along the route" else "\"$query\"", 15.sp, t.accent, FontWeight.SemiBold, modifier = Modifier.padding(6.dp).weight(1f))
                 Tap(onTap = DashNav::closeResults, modifier = Modifier.size(70.dp, 34.dp), color = t.panelHi) { Label("Back", 13.sp) }
             }
+            val cam by DashNav.camera.collectAsState()
+            if (cam == DashNav.Camera.FREE && !ui.alongRoute) {
+                Tap(onTap = { DashMapHolder.center()?.let { DashNav.searchHere(it) } }, modifier = Modifier.fillMaxWidth().height(40.dp), color = t.accent) {
+                    Label("Search this area", 14.sp, t.bgBottom, FontWeight.SemiBold)
+                }
+            }
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Chip("Open now", openNow) { openNow = !openNow }
                 if (!ui.alongRoute) Sort.entries.forEach { s -> Chip(s.label, sort == s) { sort = s } }
@@ -676,6 +838,11 @@ private fun Results(modifier: Modifier, query: String, places: List<Place>) {
                             Label(listOfNotNull(p.fuelPrice, p.rating?.let { "★ %.1f".format(it) }, p.statusText ?: p.category, p.address).joinToString(" · "), 12.sp, t.textDim)
                             if (ui.alongRoute) Label("Tap to add as a stop", 11.sp, t.accent)
                         }
+                    }
+                }
+                if (!ui.alongRoute) item {
+                    Tap(onTap = DashNav::moreResults, onTapUp = true, modifier = Modifier.fillMaxWidth().height(44.dp), color = t.panel) {
+                        Label("More results", 14.sp, t.accent, FontWeight.SemiBold)
                     }
                 }
             }
@@ -747,7 +914,10 @@ private fun Preview(modifier: Modifier) {
             Card(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(8.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Label("Stops:", 13.sp, t.textDim)
-                    ui.stops.forEach { stop -> Chip("${stop.name}  ✕", true) { DashNav.removeStop(stop) } }
+                    ui.stops.forEachIndexed { i, stop ->
+                        if (i > 0) Chip("◀", false) { DashNav.moveStopEarlier(stop) }
+                        Chip("${i + 1}. ${stop.name}  ✕", true) { DashNav.removeStop(stop) }
+                    }
                 }
             }
         }
@@ -762,6 +932,7 @@ private fun Preview(modifier: Modifier) {
                     Chip("Steps", false) { steps = true }
                     Chip("↺ Round trip", false) { DashNav.roundTrip() }
                     Chip("💾 Save trip", false) { DashNav.saveTrip(); options = false }
+                    Chip("Other locations", false) { DashNav.otherLocations(dest) }
                     if (ui.stops.size >= 2) Chip("⇅ Reverse stops", false) { DashNav.reverseStops() }
                     Chip("Close", false) { options = false }
                 }

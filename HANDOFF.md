@@ -78,6 +78,16 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **0.6.0.** Speed limit streams from Vela's maxspeed overlays (`VelaLinks.maxspeedManifest()`, one PMTiles archive per region,
+  e.g. WA 31 MB), read one tile at a time by Vela's `StreamedSpeedLimit` + `PmtilesReader`, copied unchanged into `DriveApp/gearslip/src/main/java/app/vela/`
+  (GPL-3.0, header notes the source). The downloaded region is tried first. Verified on the Pixel: the I-90 floating bridge gives 97 km/h = 60 mph
+  (debug `--es limitat "lat,lng;..."`); a residential street returns none (untagged in OSM, as in Vela). Route visuals: shields (`SHIELD_SRC`,
+  SymbolLayer along the line with each step's `ref`, "SR 20" seen on the Pixel) and the next-turn arrow (`drawTurn`: a white stroke 35 m before to 25 m after,
+  plus an arrowhead). Search: `searchHere` (map center, after a pan), `moreResults` (`searchMore`), `otherLocations` (`searchBranches`), `moveStopEarlier`.
+  Offline map tiles: `DashOffline.downloadTiles` (Vela basemap manifest, WA 318 MB, into `filesDir/basemap/<id>.pmtiles` + `boxes.json`). When
+  `DashNav.online` is false, `DashMapHolder.offlineStyleJson` reloads the saved OpenFreeMap style (`filesDir/styles/`) with
+  `openmaptiles.url = pmtiles://file://...` and drops the online-only relief layer. **Not verified: the offline tile swap** (needs a 318 MB download, then going offline).
+  Debug harness: `--ez go true` starts the drive after `navsearch`.
 - 2026-11-23: **0.5.0.** Contacts' postal addresses (`DashContacts.addresses`, StructuredPostal) appear in suggestions, search and
   "navigate to <name>"; a contact place (`id contact:`) is geocoded with the address lookup before routing. Saved trips (`DashPlaces.trips`).
   The closing-time warning parses "Closes h:mm AM/PM" from the place status against the arrival time. Satellite style is a raster-only style

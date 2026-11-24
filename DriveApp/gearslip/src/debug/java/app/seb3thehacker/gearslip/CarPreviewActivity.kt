@@ -138,6 +138,11 @@ class CarPreviewActivity : ComponentActivity() {
                 val r = kotlinx.coroutines.withTimeoutOrNull(25_000) {
                     app.seb3thehacker.gearslip.dash.DashNav.state.first { it.phase != app.seb3thehacker.gearslip.dash.DashNav.Phase.ROUTING }
                 }
+                if (intent.getBooleanExtra("go", false) && r?.phase == app.seb3thehacker.gearslip.dash.DashNav.Phase.PREVIEW) {
+                    kotlinx.coroutines.delay(3000)
+                    app.seb3thehacker.gearslip.dash.DashNav.go()
+                    GearslipLog.i("navsearch: drive started")
+                }
                 intent.getStringExtra("along")?.let { a ->
                     kotlinx.coroutines.delay(4000)
                     val d = app.seb3thehacker.gearslip.dash.DashNav.state.value.details
@@ -150,6 +155,19 @@ class CarPreviewActivity : ComponentActivity() {
                 }
                 GearslipLog.i("navsearch: route ${r?.phase} ${r?.routes?.firstOrNull()?.let { "${(it.distanceMeters / 1609).toInt()} mi, ${(it.durationSeconds / 60).toInt()} min, ${it.maneuvers.size} steps" }} ${r?.error.orEmpty()}")
             }
+        }
+
+        // Dashline speed limit at fixed points: --es limitat "lat,lng;lat,lng"
+        intent.getStringExtra("limitat")?.let { pts ->
+            Thread {
+                app.vela.data.StreamedSpeedLimit.http = okhttp3.OkHttpClient()
+                for (pt in pts.split(";")) {
+                    val (la, lo) = pt.split(",").map { it.trim().toDouble() }
+                    val uri = "pmtiles://https://github.com/PimpinPumpkin/Vela/releases/download/maxspeed-overlays/washington.pmtiles"
+                    val kmh = runCatching { app.vela.data.StreamedSpeedLimit.limitAt(listOf(uri), la, lo) }.getOrElse { GearslipLog.w("limitat: ${it.message}"); null }
+                    GearslipLog.i("limitat: point ${pts.split(";").indexOf(pt)} -> ${kmh?.let { "%.0f km/h = %.0f mph".format(it, it / 1.609344) } ?: "none"}")
+                }
+            }.start()
         }
 
         // Dashline assistant without speaking: --es ask "call sam" logs what it would answer.

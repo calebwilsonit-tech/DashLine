@@ -18,7 +18,7 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Results with rating, category, distance | ✅ 0.2.0 |
 | Search along the route, with minutes added per stop (tap one to add it as a stop) | ✅ 0.3.0 |
 | Open now filter; sort by best, nearest, top rated | ✅ 0.3.0 (price filter ⬜) |
-| Chain's other branches, "More results", "Search this area" | ⬜ Next |
+| Chain's other locations, More results, Search this area | ✅ 0.6.0 |
 | Contacts' addresses in search and voice ("navigate to Mom") | ✅ 0.5.0 |
 
 ## Places
@@ -36,7 +36,7 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Google's route with live traffic and closures | ✅ |
 | Up to four routes with time and traffic; pick one | ✅ 0.2.0 |
 | Route line colored by traffic | ✅ 0.2.0 |
-| Stops: add (before Go or during the drive), remove, reverse; round trip | ✅ 0.3.0 / 0.4.0 (drag to reorder ⬜) |
+| Stops: add, remove, reorder (◀), reverse; round trip | ✅ 0.3.0–0.6.0 |
 | Avoid tolls / highways (remembered) | ✅ 0.3.0 (ferries, no-toll comparison ⬜) |
 | Depart at / arrive by | ➖ (a trip-planning screen, not for the driver's seat) |
 | Step list before starting | ✅ 0.3.0 |
@@ -55,14 +55,14 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Rerouting (with banner) | ✅ engine; banner 0.2.0 |
 | Faster route offers (Take it / No) | ✅ 0.2.0 |
 | Your speed | ✅ 0.2.0 |
-| Posted speed limit (with an offline region installed), speeding alert | ✅ 0.4.0 |
+| Posted speed limit (streamed from Vela's overlays with signal; from a downloaded region without), speeding alert | ✅ 0.4.0 / 0.6.0 |
 | Overview / re-center, zoom, north-up or heading-up | ✅ 0.2.0 |
 | Mute spoken turns | ✅ 0.2.0 |
 | Arrival card with trip time and distance | ✅ 0.2.0 |
 | Voice detail levels (everything / brief / highway exits only) | ✅ 0.3.0 |
 | Step list during the drive (tap the turn card) | ✅ 0.3.0 |
 | Pause a drive | ✅ 0.4.0 |
-| Road-ahead bar (traffic and cameras) | ✅ 0.5.0 (turn arrows on the route, callouts, shields on the line ⬜) |
+| Road-ahead bar (traffic and cameras); turn arrow on the route; road-number shields on the line | ✅ 0.5.0 / 0.6.0 (cross-street callouts ⬜) |
 | Speed cameras (OpenStreetMap, on the map, banner and spoken) | ✅ 0.3.0 (red-light cameras ⬜) |
 | Resume a drive after a restart | ✅ 0.4.0 |
 | Gas stations only on the map while driving | ⬜ Next |
@@ -76,7 +76,7 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Live traffic overlay while browsing (🚦 toggle) | ✅ 0.3.0 |
 | Place icons from Vela's open data | ⬜ Next |
 | 3D buildings, tilt | ⬜ Next |
-| Offline regions (447, from Vela's catalog) for routing and speed limits | ✅ 0.4.0 (offline map tiles and place packs ⬜) |
+| Offline regions (447, from Vela's catalog) for routing and speed limits; map tiles for no signal | ✅ 0.4.0 / 0.6.0 (offline place packs ⬜) |
 
 ## Settings, privacy
 | Feature | Status |

@@ -114,6 +114,9 @@ object DashNav {
     private var prefs: android.content.SharedPreferences? = null
     private var appContext: Context? = null
 
+    /** Whether the phone has a connection; offline, the map swaps to downloaded tiles. */
+    val online = MutableStateFlow(true)
+
     /** Ask the car screen to show the Map (a shared link, "navigate to"). */
     val showMap = MutableStateFlow(0)
 
@@ -175,6 +178,7 @@ object DashNav {
         app.vela.core.data.RoutingPrefs.avoidHighways = avoidHighways.value
         app.vela.core.nav.SpokenDetail.mode = voiceDetail.value
         http = CoreModule.okHttpClient()
+        app.vela.data.StreamedSpeedLimit.http = http
         calibration = CalibrationStore(c, http)
         val diag = DiagLog(c)
         source = GoogleMapsDataSource(
@@ -195,6 +199,14 @@ object DashNav {
         ready = true
         scope.launch { runCatching { calibration.refresh() }.onFailure { GearslipLog.w("nav: calibration refresh failed: ${it.message}") } }
         startLocation(c)
+        runCatching {
+            val cm = c.getSystemService(android.net.ConnectivityManager::class.java)
+            online.value = cm.activeNetwork != null
+            cm.registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: android.net.Network) { online.value = true }
+                override fun onLost(network: android.net.Network) { online.value = false }
+            })
+        }
         // The session's arrival ends Dashline's drive state too.
         scope.launch {
             session.state.collect { s ->
@@ -232,19 +244,48 @@ object DashNav {
     }
 
     private var limitAt = 0L
+    private var limitLogged = false
 
     private fun updateLimit(at: LatLng, speedMps: Float?) {
         val now = android.os.SystemClock.elapsedRealtime()
         if (now - limitAt < 2_000 || !::routeEngine.isInitialized) return
         limitAt = now
         scope.launch {
-            val kmh = withContext(Dispatchers.Default) { runCatching { routeEngine.currentRoadLimit(at.lat, at.lng) }.getOrNull() }
+            val kmh = withContext(Dispatchers.IO) {
+                // A downloaded region first; otherwise Vela's speed-limit overlay, streamed a tile at a time.
+                runCatching { routeEngine.currentRoadLimit(at.lat, at.lng) }.getOrNull()
+                    ?: overlayUris(at).takeIf { it.isNotEmpty() }?.let { uris ->
+                        runCatching { app.vela.data.StreamedSpeedLimit.limitAt(uris, at.lat, at.lng) }.getOrNull()
+                    }
+            }
             val mph = kmh?.let { (it / 1.609344 / 5).let { v -> (Math.round(v) * 5).toInt() } }
-            if (mph != speedLimitMph.value) speedLimitMph.value = mph
+            if (!limitLogged) { limitLogged = true; GearslipLog.i("nav: first speed limit lookup -> ${mph ?: "none"} (overlays ${overlays?.size ?: 0})") }
+            if (mph != speedLimitMph.value) {
+                GearslipLog.i("nav: speed limit ${mph ?: "unknown"}")
+                speedLimitMph.value = mph
+            }
             val over = mph != null && speedMps != null && speedMps * 2.23694f > mph + 7
             if (over && !speeding.value && voiceOn.value) DirectionsVoice.speak("Speed limit $mph")
             speeding.value = over
         }
+    }
+
+    /** Vela's speed-limit overlays (one PMTiles archive per state/country), listed once per run. */
+    private var overlays: List<Pair<DoubleArray, String>>? = null
+
+    private fun overlayUris(at: LatLng): List<String> {
+        val list = overlays ?: runCatching {
+            val body = http.newCall(okhttp3.Request.Builder().url(app.vela.core.config.VelaLinks.maxspeedManifest()).build()).execute()
+                .use { if (it.isSuccessful) it.body?.string() else null } ?: return emptyList()
+            val arr = org.json.JSONObject(body).getJSONArray("regions")
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                val b = o.getJSONArray("bbox")
+                doubleArrayOf(b.getDouble(0), b.getDouble(1), b.getDouble(2), b.getDouble(3)) to "pmtiles://" + o.getString("url")
+            }
+        }.getOrNull()?.also { overlays = it } ?: return emptyList()
+        return list.filter { (b, _) -> at.lat in b[0]..b[2] && at.lng in b[1]..b[3] && b[3] - b[1] < 60 }
+            .sortedBy { (b, _) -> (b[2] - b[0]) * (b[3] - b[1]) }.map { it.second }.take(2)
     }
 
     private fun onFix(loc: Location) {
@@ -323,6 +364,8 @@ object DashNav {
             return
         }
         _state.value = State(Phase.SEARCHING, query = q)
+        lastNear = _fix.value?.at
+        morePage = 1
         scope.launch {
             runCatching {
                 withContext(Dispatchers.IO) {
@@ -603,6 +646,59 @@ object DashNav {
             left < 15 -> "Closes $left min after you arrive"
             else -> null
         }
+    }
+
+    /** Where the last full search was centered, for More results. */
+    private var lastNear: LatLng? = null
+    private var morePage = 1
+
+    /** The same search again, around where the map is looking (after a pan). */
+    fun searchHere(center: LatLng) {
+        val q = _state.value.query.ifBlank { return }
+        _state.value = State(Phase.SEARCHING, query = q)
+        lastNear = center
+        morePage = 1
+        scope.launch {
+            val places = runCatching { withContext(Dispatchers.IO) { source.search(q, near = center, spanMeters = SEARCH_SPAN_M, rankFrom = center).places } }.getOrDefault(emptyList())
+            _state.value = if (places.isEmpty()) State(Phase.ERROR, q, error = "Nothing found here for \"$q\"") else State(Phase.RESULTS, q, results = places)
+        }
+    }
+
+    /** The next page of the current results. */
+    fun moreResults() {
+        val s = _state.value
+        if (s.phase != Phase.RESULTS || s.alongRoute) return
+        val near = lastNear ?: _fix.value?.at
+        scope.launch {
+            val more = runCatching {
+                withContext(Dispatchers.IO) { source.searchMore(s.query, near, SEARCH_SPAN_M, _fix.value?.at, fromPage = morePage, pages = 1) }
+            }.getOrDefault(emptyList())
+            morePage++
+            if (_state.value.query == s.query) _state.value = _state.value.copy(results = dedupe(_state.value.results + more))
+        }
+    }
+
+    /** Other locations of the same business (a chain's branches), around here. */
+    fun otherLocations(place: Place) {
+        val q = place.name
+        _state.value = State(Phase.SEARCHING, query = q)
+        scope.launch {
+            val branches = runCatching {
+                withContext(Dispatchers.IO) { source.searchBranches(q, place, listOf(place), near = _fix.value?.at, spanMeters = 40_000.0, rankFrom = _fix.value?.at) }
+            }.getOrDefault(emptyList())
+            _state.value = State(Phase.RESULTS, q, results = dedupe(listOf(place) + branches))
+        }
+    }
+
+    /** Moves a stop one place earlier in the order. */
+    fun moveStopEarlier(place: Place) {
+        val s = _state.value
+        val i = s.stops.indexOf(place)
+        val dest = s.destination ?: return
+        if (i <= 0) return
+        val list = s.stops.toMutableList().apply { add(i - 1, removeAt(i)) }
+        _state.value = s.copy(stops = list)
+        preview(dest)
     }
 
     fun choose(index: Int) {

@@ -39,6 +39,10 @@ object DashOffline {
         /** id → 0..100 while downloading. */
         val downloading: Map<String, Int> = emptyMap(),
         val error: String = "",
+        /** Map-tile files (Vela's basemap PMTiles), by region id: catalog, installed, downloading. */
+        val tiles: Map<String, Region> = emptyMap(),
+        val tilesInstalled: Set<String> = emptySet(),
+        val tilesDownloading: Map<String, Int> = emptyMap(),
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -58,13 +62,126 @@ object DashOffline {
         val dir = File(context.applicationContext.filesDir, "obf")
         root = dir
         app.vela.core.data.OfflineRoot.dir = context.applicationContext.filesDir
-        _state.value = _state.value.copy(installed = installedIds())
+        tilesRoot = File(context.applicationContext.filesDir, "basemap")
+        _state.value = _state.value.copy(installed = installedIds(), tilesInstalled = tilesIds())
     }
+
+    private var tilesRoot: File? = null
+    private fun tilesIds(): Set<String> = tilesRoot?.listFiles { f -> f.name.endsWith(".pmtiles") && f.length() > 0 }
+        ?.map { it.name.removeSuffix(".pmtiles") }?.toSet().orEmpty()
+
+    /** The installed map-tile file covering a point (smallest region first), or null. */
+    fun tilesFor(lat: Double, lng: Double): File? {
+        val dir = tilesRoot ?: return null
+        val st = _state.value
+        return st.tilesInstalled.mapNotNull { id -> st.tiles[id]?.let { it to File(dir, "$id.pmtiles") } ?: boxes[id]?.let { it to File(dir, "$id.pmtiles") } }
+            .filter { (r, _) -> r.covers(lat, lng) }
+            .minByOrNull { (r, _) -> (r.n - r.s) * (r.e - r.w) }?.second
+    }
+
+    /** Boxes of installed tile files, kept so [tilesFor] works before the catalog loads (offline). */
+    private val boxes: Map<String, Region> by lazy {
+        val f = tilesRoot?.let { File(it, "boxes.json") }
+        runCatching {
+            val o = JSONObject(f!!.readText())
+            o.keys().asSequence().associateWith { id ->
+                val b = o.getJSONArray(id)
+                Region(id, id, "", 0, b.getDouble(0), b.getDouble(1), b.getDouble(2), b.getDouble(3))
+            }
+        }.getOrDefault(emptyMap())
+    }
+
+    private fun loadTiles(context: Context) {
+        scope.launch {
+            val cache = File(context.cacheDir, "basemap-manifest.json")
+            val json = withContext(Dispatchers.IO) {
+                runCatching {
+                    http.newCall(Request.Builder().url(app.vela.core.config.VelaLinks.basemapManifest()).build()).execute().use { r ->
+                        if (!r.isSuccessful) error("HTTP ${r.code}")
+                        r.body!!.string().also { cache.writeText(it) }
+                    }
+                }.getOrNull() ?: cache.takeIf { it.exists() }?.readText()
+            } ?: return@launch
+            val list = runCatching {
+                val arr = JSONObject(json).getJSONArray("regions")
+                (0 until arr.length()).map { i ->
+                    val o = arr.getJSONObject(i)
+                    val b = o.getJSONArray("bbox")
+                    Region(o.getString("id"), o.getString("name"), o.getString("url"), o.optDouble("sizeMb").toInt(), b.getDouble(0), b.getDouble(1), b.getDouble(2), b.getDouble(3))
+                }
+            }.getOrDefault(emptyList())
+            _state.value = _state.value.copy(tiles = list.associateBy { it.id })
+        }
+    }
+
+    fun downloadTiles(region: Region) {
+        val dir = tilesRoot ?: return
+        val key = "tiles:${region.id}"
+        if (key in jobs) return
+        _state.value = _state.value.copy(tilesDownloading = _state.value.tilesDownloading + (region.id to 0), error = "")
+        jobs[key] = scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                fetch(region.url, File(dir, "${region.id}.pmtiles")) { pct ->
+                    _state.value = _state.value.copy(tilesDownloading = _state.value.tilesDownloading + (region.id to pct))
+                }.also { done ->
+                    if (done) runCatching {
+                        val f = File(dir, "boxes.json")
+                        val o = if (f.exists()) JSONObject(f.readText()) else JSONObject()
+                        o.put(region.id, JSONArray().put(region.s).put(region.w).put(region.n).put(region.e))
+                        f.writeText(o.toString())
+                    }
+                }
+            }
+            jobs.remove(key)
+            _state.value = _state.value.copy(
+                tilesDownloading = _state.value.tilesDownloading - region.id,
+                tilesInstalled = tilesIds(),
+                error = if (ok) "" else "${region.name} map tiles didn't download. Try again on Wi-Fi.",
+            )
+        }
+    }
+
+    fun deleteTiles(region: Region) {
+        File(tilesRoot ?: return, "${region.id}.pmtiles").delete()
+        _state.value = _state.value.copy(tilesInstalled = tilesIds())
+    }
+
+    /** Streams [url] into [dest] through a temp file; true when it landed. */
+    private suspend fun fetch(url: String, dest: File, progress: (Int) -> Unit): Boolean = runCatching {
+        dest.parentFile?.mkdirs()
+        val tmp = File(dest.parentFile, dest.name + ".tmp").apply { delete() }
+        http.newCall(Request.Builder().url(url).build()).execute().use { resp ->
+            if (!resp.isSuccessful) error("HTTP ${resp.code}")
+            val total = resp.body!!.contentLength()
+            resp.body!!.byteStream().use { input ->
+                tmp.outputStream().use { out ->
+                    val buf = ByteArray(1 shl 16)
+                    var read = 0L
+                    var last = -1
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n)
+                        read += n
+                        if (total > 0) {
+                            val pct = (100 * read / total).toInt()
+                            if (pct != last) { last = pct; withContext(Dispatchers.Main) { progress(pct) } }
+                        }
+                    }
+                }
+            }
+        }
+        check(tmp.length() > 1024) { "download is implausibly small" }
+        dest.delete()
+        if (!tmp.renameTo(dest)) { tmp.copyTo(dest, overwrite = true); tmp.delete() }
+        true
+    }.onFailure { GearslipLog.w("offline: ${dest.name} download failed: ${it.message}") }.getOrDefault(false)
 
     /** Loads Vela's region list (cached on disk for offline use). */
     fun loadCatalog(context: Context) {
         init(context)
         if (_state.value.catalog.isNotEmpty()) return
+        loadTiles(context)
         scope.launch {
             val cache = File(context.cacheDir, "obf-manifest.json")
             val json = withContext(Dispatchers.IO) {

@@ -147,8 +147,8 @@ private fun OfflineMaps() {
     }
     Text("Offline maps", style = MaterialTheme.typography.titleMedium)
     Text(
-        "Download your state for routes without signal and the speed limit on the truck screen. " +
-            "Files are 30–200 MB, so use Wi-Fi.",
+        "Download your state for routes and speed limits where there's no signal (with signal they work anyway). " +
+            "Add its map tiles to keep the map itself drawing in dead zones. Big files, so use Wi-Fi.",
         style = MaterialTheme.typography.bodyMedium,
     )
     if (st.error.isNotEmpty()) Text(st.error, color = MaterialTheme.colorScheme.error)
@@ -187,6 +187,26 @@ private fun OfflineMaps() {
                 pct != null -> Unit
                 r.id in st.installed -> OutlinedButton(onClick = { DashOffline.delete(r) }) { Text("Delete") }
                 else -> Button(onClick = { DashOffline.download(r) }) { Text("Download") }
+            }
+        }
+        // The map itself without signal: Vela's basemap tiles for the same region.
+        st.tiles[r.id]?.let { tr ->
+            val tp = st.tilesDownloading[tr.id]
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 16.dp)) {
+                Text(
+                    when {
+                        tp != null -> "Map tiles: downloading\u2026 $tp%"
+                        tr.id in st.tilesInstalled -> "Map tiles installed \u00b7 ${tr.sizeMb} MB"
+                        else -> "Map tiles for no signal \u00b7 ${tr.sizeMb} MB"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f),
+                )
+                when {
+                    tp != null -> Unit
+                    tr.id in st.tilesInstalled -> OutlinedButton(onClick = { DashOffline.deleteTiles(tr) }) { Text("Delete") }
+                    else -> OutlinedButton(onClick = { DashOffline.downloadTiles(tr) }) { Text("Get") }
+                }
             }
         }
     }
