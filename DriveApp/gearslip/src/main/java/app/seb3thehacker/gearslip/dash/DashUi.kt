@@ -218,6 +218,12 @@ fun DashUi() {
                 }
             }
             VoiceOverlay(Modifier.align(Alignment.BottomCenter))
+            // Calls: incoming over everything; in progress as a panel that leaves the map visible.
+            when (val c = call) {
+                is CallUiState.Ringing -> IncomingCall(c)
+                is CallUiState.Active -> ActiveCall(c, Modifier.align(Alignment.BottomEnd).padding(10.dp))
+                else -> Unit
+            }
         }
     }
 }

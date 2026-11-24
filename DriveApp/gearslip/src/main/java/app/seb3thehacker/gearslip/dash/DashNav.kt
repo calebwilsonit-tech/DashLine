@@ -14,6 +14,7 @@ import app.seb3thehacker.gearslip.GearslipLog
 import app.seb3thehacker.gearslip.car.DirectionsVoice
 import app.vela.core.config.CalibrationStore
 import app.vela.core.config.JsTransforms
+import app.vela.core.data.PhotonGeocoder
 import app.vela.core.data.google.GoogleMapsDataSource
 import app.vela.core.data.google.GoogleSession
 import app.vela.core.di.CoreModule
@@ -23,26 +24,32 @@ import app.vela.core.model.LatLng
 import app.vela.core.model.Place
 import app.vela.core.model.Route
 import app.vela.core.nav.NavSession
+import app.vela.core.util.AddressQuery
 import app.vela.core.voice.VoiceGuide
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.OkHttpClient
 
 /**
  * Dashline's navigation, on Vela's engine (github.com/PimpinPumpkin/Vela, GPL-3.0, prebuilt in
  * DriveApp/vela/). Vela's :core is UI-free: search, places, routes with live traffic, and the
  * turn-by-turn session. Dashline wires the same objects Vela's Hilt graph would (CoreModule),
- * feeds it the phone's GPS, and draws everything itself (DashMap.kt).
+ * runs the search the way Vela's app does (addresses through Google autocomplete with a wide
+ * span plus OpenStreetMap's Photon), feeds it the phone's GPS, and draws everything itself.
  *
  * Spoken turns: Vela's own voice is muted and every line it would say comes out through
- * Gearslip's [DirectionsVoice], which plays on the truck's directions channel (navigation audio
- * from TextToSpeech can't be captured otherwise).
+ * Gearslip's [DirectionsVoice], on the truck's directions channel.
  */
 object DashNav {
 
@@ -58,18 +65,37 @@ object DashNav {
         val results: List<Place> = emptyList(),
         val destination: Place? = null,
         val routes: List<Route> = emptyList(),
+        val chosen: Int = 0,
         val error: String = "",
-    )
+    ) {
+        val route: Route? get() = routes.getOrNull(chosen)
+    }
+
+    /** Suggestions while typing: saved/recent places first, then Google and OpenStreetMap. */
+    @Immutable
+    data class Suggestions(val term: String = "", val places: List<Place> = emptyList(), val queries: List<String> = emptyList())
+
+    /** How the camera behaves: following the car, showing the whole route, or free after a pan. */
+    enum class Camera { FOLLOW, OVERVIEW, FREE }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private var app: Context? = null
 
     private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state.asStateFlow()
 
+    private val _suggestions = MutableStateFlow(Suggestions())
+    val suggestions: StateFlow<Suggestions> = _suggestions.asStateFlow()
+
     private val _fix = MutableStateFlow<Fix?>(null)
     val fix: StateFlow<Fix?> = _fix.asStateFlow()
 
+    val camera = MutableStateFlow(Camera.FOLLOW)
+    /** Map always north-up (otherwise it turns with the truck while driving). */
+    val northUp = MutableStateFlow(false)
+    /** Spoken turns on or off. */
+    val voiceOn = MutableStateFlow(true)
+
+    private lateinit var http: OkHttpClient
     private lateinit var source: GoogleMapsDataSource
     private lateinit var calibration: CalibrationStore
     lateinit var session: NavSession
@@ -79,8 +105,8 @@ object DashNav {
     fun init(context: Context) {
         if (ready) return
         val c = context.applicationContext
-        app = c
-        val http = CoreModule.okHttpClient()
+        DashPlaces.init(c)
+        http = CoreModule.okHttpClient()
         calibration = CalibrationStore(c, http)
         val diag = DiagLog(c)
         source = GoogleMapsDataSource(
@@ -95,13 +121,18 @@ object DashNav {
         val voice = VoiceGuide(c).apply {
             muted = true
             // Every line Vela would speak, spoken on the truck's directions channel instead.
-            onMuted = { line -> DirectionsVoice.speak(line) }
+            onMuted = { line -> if (voiceOn.value) DirectionsVoice.speak(line) }
         }
         session = NavSession(source, voice, Haptics(c), diag)
         ready = true
-        // The signed request templates Vela fetches from its own repository at launch.
         scope.launch { runCatching { calibration.refresh() }.onFailure { GearslipLog.w("nav: calibration refresh failed: ${it.message}") } }
         startLocation(c)
+        // The session's arrival ends Dashline's drive state too.
+        scope.launch {
+            session.state.collect { s ->
+                if (s.arrived && _state.value.phase == Phase.NAVIGATING) GearslipLog.i("nav: arrived")
+            }
+        }
     }
 
     // --- location ---------------------------------------------------------------------------
@@ -143,37 +174,103 @@ object DashNav {
         }
     }
 
-    // --- search, route, go -------------------------------------------------------------------
+    // --- search ------------------------------------------------------------------------------
 
-    fun search(query: String) {
-        if (!ready || query.isBlank()) return
-        _state.value = State(Phase.SEARCHING, query = query)
-        scope.launch {
-            runCatching {
-                withContext(Dispatchers.IO) { source.search(query, near = _fix.value?.at, rankFrom = _fix.value?.at).places }
-            }.onSuccess { places ->
-                _state.value = if (places.isEmpty()) State(Phase.ERROR, query, error = "Nothing found for \"$query\"")
-                else State(Phase.RESULTS, query, results = places.take(8))
-            }.onFailure {
-                GearslipLog.w("nav: search failed: ${it.javaClass.simpleName}")
-                _state.value = State(Phase.ERROR, query, error = "Search didn't work. Check the phone's internet.")
+    private var suggestJob: Job? = null
+
+    /** Live suggestions while typing, the way Vela's search box does it. */
+    fun suggest(term: String) {
+        suggestJob?.cancel()
+        val t = term.trim()
+        val local = DashPlaces.matching(t).map { it.place() }
+        _suggestions.value = Suggestions(t, local)
+        if (!ready || t.length < 2) return
+        suggestJob = scope.launch {
+            delay(320) // fire once typing pauses
+            val found = withContext(Dispatchers.IO) { lookup(t) }
+            if (_suggestions.value.term == t) {
+                _suggestions.value = Suggestions(t, dedupe(local + found.first).take(8), found.second.take(3))
             }
         }
     }
 
-    /** Routes from here to [place] and shows the preview (time with traffic, distance). */
+    /**
+     * Google autocomplete (with a wide span for an address, so "833 Beech Bend Dr Nashville"
+     * isn't pulled to a lookalike street nearby) raced against Photon (OpenStreetMap) for
+     * house-number queries. Returns places and query completions.
+     */
+    private suspend fun lookup(t: String): Pair<List<Place>, List<String>> = kotlinx.coroutines.coroutineScope {
+        val near = _fix.value?.at
+        val address = AddressQuery.parse(t) != null || PhotonGeocoder.looksLikeAddress(t)
+        val photon = if (address) async {
+            runCatching { PhotonGeocoder.suggest(http, t, near, "en", limit = 4, hardBox = false) }.getOrDefault(emptyList())
+        } else null
+        val span = if (address) ADDRESS_SPAN_M else SEARCH_SPAN_M
+        val auto = runCatching { source.suggest(t, near, span) }.getOrNull()
+        val google = auto?.places.orEmpty()
+        val osm = photon?.await().orEmpty()
+        // For an address, a match that names the right city should win over a nearer lookalike,
+        // and the exact house number over its neighbors.
+        val merged = if (address) dedupe(osm + google) else dedupe(google + osm)
+        val houseNo = Regex("""^\s*(\d+)""").find(t)?.groupValues?.get(1)
+        val ranked = if (houseNo == null) merged else merged.sortedByDescending { p ->
+            Regex("""\b""" + houseNo + """\b""").containsMatchIn(p.name + " " + p.address.orEmpty())
+        }
+        Pair(ranked, auto?.queries.orEmpty())
+    }
+
+    /** A full search (Enter on the keyboard, a spoken place, a category button). */
+    fun search(query: String) {
+        if (!ready || query.isBlank()) return
+        val q = query.trim()
+        DashPlaces.find(q)?.let { spot ->
+            _state.value = State(Phase.RESULTS, q, results = listOf(spot.place()))
+            return
+        }
+        _state.value = State(Phase.SEARCHING, query = q)
+        scope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val address = AddressQuery.parse(q) != null || PhotonGeocoder.looksLikeAddress(q)
+                    if (address) {
+                        lookup(q).first.ifEmpty { source.search(q, near = _fix.value?.at, spanMeters = ADDRESS_SPAN_M).places }
+                    } else {
+                        source.search(q, near = _fix.value?.at, spanMeters = SEARCH_SPAN_M, rankFrom = _fix.value?.at).places
+                    }
+                }
+            }.onSuccess { places ->
+                _state.value = if (places.isEmpty()) State(Phase.ERROR, q, error = "Nothing found for \"$q\"")
+                else State(Phase.RESULTS, q, results = places.take(10))
+            }.onFailure {
+                GearslipLog.w("nav: search failed: ${it.javaClass.simpleName}")
+                _state.value = State(Phase.ERROR, q, error = "Search didn't work. Check the phone's internet.")
+            }
+        }
+    }
+
+    private fun dedupe(list: List<Place>): List<Place> {
+        val out = mutableListOf<Place>()
+        for (p in list) if (out.none { metersBetween(it.location, p.location) < 50 }) out += p
+        return out
+    }
+
+    // --- route, go ---------------------------------------------------------------------------
+
+    /** Routes from here to [place]: up to four, with traffic. */
     fun preview(place: Place) {
         val from = _fix.value?.at
         if (from == null) {
             _state.value = _state.value.copy(phase = Phase.ERROR, error = "Waiting for the phone's GPS")
             return
         }
-        _state.value = _state.value.copy(phase = Phase.ROUTING, destination = place)
+        DashPlaces.addRecent(place)
+        _state.value = _state.value.copy(phase = Phase.ROUTING, destination = place, routes = emptyList(), chosen = 0)
+        camera.value = Camera.OVERVIEW
         scope.launch {
             runCatching { withContext(Dispatchers.IO) { source.directions(from, place.location) } }
                 .onSuccess { routes ->
                     _state.value = if (routes.isEmpty()) _state.value.copy(phase = Phase.ERROR, error = "No route found")
-                    else _state.value.copy(phase = Phase.PREVIEW, routes = routes)
+                    else _state.value.copy(phase = Phase.PREVIEW, routes = routes.take(4), chosen = 0)
                 }
                 .onFailure {
                     GearslipLog.w("nav: directions failed: ${it.javaClass.simpleName}")
@@ -182,9 +279,14 @@ object DashNav {
         }
     }
 
-    fun go(routeIndex: Int = 0) {
+    fun choose(index: Int) {
         val s = _state.value
-        val route = s.routes.getOrNull(routeIndex) ?: return
+        if (index in s.routes.indices) _state.value = s.copy(chosen = index)
+    }
+
+    fun go() {
+        val s = _state.value
+        val route = s.route ?: return
         val dest = s.destination ?: return
         session.start(
             route,
@@ -195,31 +297,49 @@ object DashNav {
             fromCourseDeg = _fix.value?.bearing?.toDouble(),
         )
         _state.value = s.copy(phase = Phase.NAVIGATING)
+        camera.value = Camera.FOLLOW
         GearslipLog.i("nav: navigation started")
     }
 
-    /** Searches and starts driving to the top result: "navigate to Costco" from the assistant. */
-    fun navigateTo(query: String) {
+    /** "Navigate to Costco", "take me home", "directions to mom's house". */
+    fun navigateTo(said: String) {
         if (!ready) return
-        search(query)
+        DashPlaces.find(said)?.let { spot ->
+            preview(spot.place())
+            scope.launch { awaitPreviewThenGo() }
+            return
+        }
+        search(said)
         scope.launch {
-            val done = kotlinx.coroutines.withTimeoutOrNull(15_000) {
-                state.first { it.phase != Phase.SEARCHING }
-            } ?: return@launch
+            val done = withTimeoutOrNull(15_000) { state.first { it.phase != Phase.SEARCHING } } ?: return@launch
             val top = done.results.firstOrNull() ?: return@launch
             preview(top)
-            val routed = kotlinx.coroutines.withTimeoutOrNull(20_000) { state.first { it.phase != Phase.ROUTING } } ?: return@launch
-            if (routed.phase == Phase.PREVIEW) go()
+            awaitPreviewThenGo()
         }
     }
+
+    private suspend fun awaitPreviewThenGo() {
+        val routed = withTimeoutOrNull(25_000) { state.first { it.phase != Phase.ROUTING } } ?: return
+        if (routed.phase == Phase.PREVIEW) go()
+    }
+
+    fun acceptFaster() = session.acceptFasterRoute()
+    fun dismissFaster() = session.dismissFasterRoute()
 
     fun stop() {
         if (::session.isInitialized) session.stop()
         _state.value = State()
+        camera.value = Camera.FOLLOW
         GearslipLog.i("nav: navigation ended")
     }
 
     fun clear() {
-        if (_state.value.phase != Phase.NAVIGATING) _state.value = State()
+        if (_state.value.phase != Phase.NAVIGATING) {
+            _state.value = State()
+            camera.value = Camera.FOLLOW
+        }
     }
+
+    private const val ADDRESS_SPAN_M = 40_000.0 // Vela's ADDRESS_SEARCH_SPAN_M
+    private const val SEARCH_SPAN_M = 30_000.0
 }

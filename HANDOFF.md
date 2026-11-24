@@ -78,6 +78,18 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **0.2.0: maps Phase 1 and the call screen.** The owner's goal for maps: everything Vela Maps does that fits a truck, as Dashline's
+  own UI on Vela's engine. The checklist is **`MAPS_PARITY.md`** (keep it current). Done: address search like Vela's app (`DashNav.lookup`:
+  Google `suggest` with a 40 km span for addresses + `PhotonGeocoder.suggest(hardBox=false)`, exact house number ranked first; the owner's
+  "833 ..." address had gone to a same-named street near them, partly a "Beach/Beech" mishearing). Also: typed search on the car keyboard
+  (`TypeSearch`, Gearslip `CarKeyboard`) with live suggestions; saved places (Home/Work/named favorites, `dash/DashPlaces.kt`) and recents;
+  category chips; "take me home" / "navigate to <saved name>"; up to 4 routes to pick from; traffic-colored route line (`TrafficSpan` slices);
+  a drive screen with turn card, lanes, shield, "Then", speed, faster-route offer, rerouting banner, mute, overview/re-center/zoom/north-up,
+  and an arrival card. Photon check from the PC: a Davis CA fixture address searched with a Seattle bias found the exact house.
+  Not yet verified on the phone: the emulator had no internet and the Pixel was unplugged.
+  Call screen (`dash/DashCall.kt`): incoming full-screen with Answer / Decline / Text back (SMS "Driving right now..."); in a call, a panel
+  with timer, Mute (`CarCalls.toggleMute`), audio route Truck/Phone/Speaker (`AudioManager.setCommunicationDevice`, best effort since
+  Telecom decides), and End. Not possible without being the default dialer: keypad tones (DTMF), hold, merge.
 - 2026-11-23: **v0.1.1** pauses music during any voice activity (`VoiceDuck` in `dash/PhoneMedia.kt`, driven from DashUi by
   combining VoiceReply/DashText/CarAssistant/PhoneAssistant state). VoiceFocus's transient-exclusive focus alone did not pause
   YouTube Music. **The in-app updater was verified: the owner's phone went 0.1.0 → 0.1.1 through Settings → Updates → Check now.**
