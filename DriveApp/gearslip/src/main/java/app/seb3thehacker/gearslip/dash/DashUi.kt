@@ -219,6 +219,7 @@ fun DashUi() {
                     }
                 }
             }
+            if (screen != DashScreen.Home) MessagePopup(Modifier.align(Alignment.TopCenter).padding(top = 10.dp, start = 86.dp, end = 10.dp))
             VoiceOverlay(Modifier.align(Alignment.BottomCenter))
             // Calls: incoming over everything; in progress as a panel that leaves the map visible.
             when (val c = call) {
@@ -327,11 +328,16 @@ private fun MapPane(modifier: Modifier, onTap: () -> Unit) {
         DashMapView(Modifier.fillMaxSize(), compact = true)
         // Tap anywhere on the small map to open the full one.
         Tap(onTap = onTap, onTapUp = true, modifier = Modifier.fillMaxSize(), color = Color.Transparent, pressedColor = Color(0x22000000), outline = false) {}
-        Box(
-            Modifier.align(Alignment.TopStart).padding(10.dp)
-                .clip(RoundedCornerShape(t.radius / 2)).background(t.panel.copy(alpha = 0.85f))
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-        ) { Clock(size = 22.sp) }
+        val driving by DashNav.session.state.collectAsState()
+        if (driving.navigating && !driving.arrived) {
+            MiniDrive(Modifier)
+        } else {
+            Box(
+                Modifier.align(Alignment.TopStart).padding(10.dp)
+                    .clip(RoundedCornerShape(t.radius / 2)).background(t.panel.copy(alpha = 0.85f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) { Clock(size = 22.sp) }
+        }
     }
 }
 
@@ -499,6 +505,35 @@ private fun AlertCard(modifier: Modifier, onOpen: () -> Unit) {
                     if (latest != null) MessageActions(latest, compact = true)
                 }
             }
+        }
+    }
+}
+
+/**
+ * A new message slides in at the top of whatever screen is up (the dashboard has its own card),
+ * with the same Reply / Read / Mute, and goes away by itself after a few seconds.
+ */
+@Composable
+private fun MessagePopup(modifier: Modifier) {
+    val t = LocalDashTheme.current
+    val popup by CarNotifications.popup.collectAsState()
+    val muted by DashMessages.muted.collectAsState()
+    val n = popup?.takeIf { DashMessages.isMessage(it) && !DashMessages.isMuted(it, muted) } ?: return
+    LaunchedEffect(n.id, n.shownAt) {
+        kotlinx.coroutines.delay(10_000)
+        CarNotifications.dismissPopup(n.id)
+    }
+    Card(modifier.fillMaxWidth()) {
+        Column(Modifier.padding(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NotificationBody(n, Modifier.weight(1f), lines = 2)
+                Spacer(Modifier.width(8.dp))
+                Tap(onTap = { CarNotifications.dismissPopup(n.id) }, modifier = Modifier.size(40.dp), shape = CircleShape, color = t.panelHi) {
+                    Label("✕", 16.sp)
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            MessageActions(n, compact = true)
         }
     }
 }

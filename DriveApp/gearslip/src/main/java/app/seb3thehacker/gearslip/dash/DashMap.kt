@@ -510,7 +510,8 @@ internal object DashMapHolder {
 internal fun DashMapView(modifier: Modifier, compact: Boolean) {
     val context = LocalContext.current
     val t = LocalDashTheme.current
-    val dark = t.bgTop.red + t.bgTop.green + t.bgTop.blue < 1.2f
+    // "Auto" map: dark when the truck says it's night (its headlight sensor; the clock otherwise).
+    val dark by app.seb3thehacker.gearslip.car.CarEnvironment.darkOutside.collectAsState()
     remember { DashNav.init(context); true }
     val styleChoice by DashNav.mapStyle.collectAsState()
     val url = DashMapHolder.styleUrl(styleChoice, dark)
@@ -770,12 +771,25 @@ private fun TypeSearch(onClose: () -> Unit) {
                 }
             }
         }
+        // Gearslip's keyboard draws from the Material theme: give it Dashline's colors.
+        androidx.compose.material3.MaterialTheme(
+            colorScheme = androidx.compose.material3.darkColorScheme(
+                primary = t.accent,
+                onPrimary = t.bgBottom,
+                surface = t.bgBottom,
+                onSurface = t.text,
+                onSurfaceVariant = t.textDim,
+                surfaceContainerHigh = t.panel,
+                surfaceContainerHighest = t.panelHi,
+            ),
+        ) {
         CarKeyboard(
             text = text,
             onTextChange = { text = it; DashNav.suggest(it) },
             onSubmit = { if (text.isNotBlank()) { onClose(); DashNav.search(text) } },
             onDismiss = onClose,
         )
+        }
     }
 }
 
@@ -1030,7 +1044,7 @@ private fun DriveScreen() {
             }
         }
         if (addingStop) AlongRouteChips(Modifier.align(Alignment.BottomCenter).padding(start = 10.dp, end = 10.dp, bottom = 80.dp).fillMaxWidth()) { addingStop = false }
-        SpeedBadge(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, bottom = 92.dp))
+        if (!steps) SpeedBadge(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, bottom = 92.dp))
         RoadAhead(Modifier.align(Alignment.BottomCenter).padding(start = 10.dp, end = 10.dp, bottom = 78.dp).fillMaxWidth().height(10.dp))
         TripBar(Modifier.align(Alignment.BottomCenter).padding(10.dp), onAddStop = { addingStop = !addingStop })
     }
@@ -1099,6 +1113,34 @@ private fun StepList(modifier: Modifier, steps: List<app.vela.core.model.Maneuve
                     }
                 }
             }
+        }
+    }
+}
+
+/** The drive on the dashboard's map pane: next turn on top, time and arrival under it. */
+@Composable
+internal fun MiniDrive(modifier: Modifier) {
+    val nav by DashNav.session.state.collectAsState()
+    if (!nav.navigating || nav.arrived) return
+    val steps = nav.route?.maneuvers.orEmpty()
+    val step = steps.getOrNull(nav.nav.stepIndex + 1) ?: steps.getOrNull(nav.nav.stepIndex)
+    Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+        Box(Modifier.padding(8.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF0F5132))) {
+            Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Label(arrow(step?.type), 28.sp, Color.White, FontWeight.Bold)
+                Spacer(Modifier.width(8.dp))
+                Column {
+                    Label(miles(nav.nav.distanceToNextManeuver), 18.sp, Color.White, FontWeight.Bold)
+                    Label(step?.road ?: step?.instruction.orEmpty(), 13.sp, Color.White)
+                }
+            }
+        }
+        Box(Modifier.padding(8.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xE6000000))) {
+            Label(
+                "${minutes(nav.remainingDuration)} · ${miles(nav.remainingDistance)} · ${arrival(nav.remainingDuration)}",
+                14.sp, Color(0xFF34C759), FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            )
         }
     }
 }

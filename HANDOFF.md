@@ -78,6 +78,11 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **0.7.0 polish.** Dashboard map pane shows `MiniDrive` (next turn plus time/distance/arrival) while navigating, like AA's split screen
+  (verified on the Pixel). New messages pop up on any screen but Home (`MessagePopup`, from `CarNotifications.popup`, 10 s, Reply/Read/Mute/✕).
+  **Not verified on the Pixel**: needs a real chat notification. The "auto" map style follows `CarEnvironment.darkOutside` (the truck's night sensor,
+  clock fallback) instead of the theme. The car keyboard is wrapped in a Material `darkColorScheme` built from the Dashline theme (verified).
+  The speed bubble hides while the turn list is open.
 - 2026-11-23: **0.6.0.** Speed limit streams from Vela's maxspeed overlays (`VelaLinks.maxspeedManifest()`, one PMTiles archive per region,
   e.g. WA 31 MB), read one tile at a time by Vela's `StreamedSpeedLimit` + `PmtilesReader`, copied unchanged into `DriveApp/gearslip/src/main/java/app/vela/`
   (GPL-3.0, header notes the source). The downloaded region is tried first. Verified on the Pixel: the I-90 floating bridge gives 97 km/h = 60 mph
