@@ -62,7 +62,58 @@ object DashThemes {
         radius = 22.dp, outline = Color(0x4022E4FF),
     )
 
-    val all = listOf(Carbon, Denali, Neon)
+    val Red = DashTheme(
+        id = "red", name = "Pro Red",
+        bgTop = Color(0xFF161212), bgBottom = Color(0xFF0A0707),
+        panel = Color(0xFF221919), panelHi = Color(0xFF332424),
+        accent = Color(0xFFE53935), accent2 = Color(0xFFFF8A80),
+        text = Color(0xFFF5F0F0), textDim = Color(0xFFA89A9A),
+        radius = 12.dp,
+    )
+
+    val Forest = DashTheme(
+        id = "forest", name = "Forest",
+        bgTop = Color(0xFF101A14), bgBottom = Color(0xFF070D09),
+        panel = Color(0xFF17241C), panelHi = Color(0xFF223529),
+        accent = Color(0xFF7CD957), accent2 = Color(0xFFC6F2A9),
+        text = Color(0xFFEFF6EE), textDim = Color(0xFF94A897),
+        radius = 16.dp,
+    )
+
+    val Ocean = DashTheme(
+        id = "ocean", name = "Ocean",
+        bgTop = Color(0xFF0B1A24), bgBottom = Color(0xFF050D13),
+        panel = Color(0xFF112634), panelHi = Color(0xFF1A3648),
+        accent = Color(0xFF26C6DA), accent2 = Color(0xFF80DEEA),
+        text = Color(0xFFEAF6FA), textDim = Color(0xFF8FA9B5),
+        radius = 20.dp, outline = Color(0x3326C6DA),
+    )
+
+    val Sunset = DashTheme(
+        id = "sunset", name = "Sunset",
+        bgTop = Color(0xFF1E1026), bgBottom = Color(0xFF0C0610),
+        panel = Color(0xFF2A1735), panelHi = Color(0xFF3B2149),
+        accent = Color(0xFFFF8F3F), accent2 = Color(0xFFFF5E8A),
+        text = Color(0xFFFAF0F5), textDim = Color(0xFFB399AD),
+        radius = 22.dp,
+    )
+
+    /** For bright sun: light panels, dark text. */
+    val Daylight = DashTheme(
+        id = "daylight", name = "Daylight",
+        bgTop = Color(0xFFE9ECF0), bgBottom = Color(0xFFD5DAE0),
+        panel = Color(0xFFFFFFFF), panelHi = Color(0xFFE3E7EC),
+        accent = Color(0xFF1565C0), accent2 = Color(0xFF42A5F5),
+        text = Color(0xFF111418), textDim = Color(0xFF5B6470),
+        radius = 16.dp, outline = Color(0x22000000),
+    )
+
+    val all = listOf(Carbon, Denali, Neon, Red, Forest, Ocean, Sunset, Daylight)
+
+    /** Accent colors the driver can put on any theme (phone settings). */
+    val ACCENTS = listOf(
+        0xFFFF7A1A, 0xFFE53935, 0xFFFFC107, 0xFF7CD957, 0xFF26C6DA, 0xFF3D8BFF, 0xFFB388FF, 0xFFFF5E8A, 0xFFC9CED6,
+    )
 
     fun byId(id: String?) = all.firstOrNull { it.id == id } ?: Carbon
 }
@@ -78,6 +129,16 @@ object DashPrefs {
     private const val KEY_MODEL = "gemini_model"
     private const val KEY_AUTOPLAY = "autoplay"
     private const val KEY_ASSISTANT = "assistant"
+    private const val KEY_ACCENT = "accent"
+
+    /** The driver's own accent color over the theme's; 0 = the theme's own. */
+    private val _accent = MutableStateFlow(0L)
+    val accent: StateFlow<Long> = _accent.asStateFlow()
+
+    fun setAccent(argb: Long) {
+        _accent.value = argb
+        prefs()?.edit()?.putLong(KEY_ACCENT, argb)?.apply()
+    }
 
     enum class Assistant(val label: String) {
         PHONE("Phone's Google Assistant / Gemini"),
@@ -109,6 +170,7 @@ object DashPrefs {
         _theme.value = prefs()?.getString(KEY_THEME, null) ?: DashThemes.Carbon.id
         VideoTuning.load(prefs()?.getString(KEY_VIDEO, null))
         _autoPlay.value = prefs()?.getBoolean(KEY_AUTOPLAY, true) ?: true
+        _accent.value = prefs()?.getLong(KEY_ACCENT, 0L) ?: 0L
         _assistant.value = Assistant.entries.firstOrNull { it.name == prefs()?.getString(KEY_ASSISTANT, null) } ?: Assistant.PHONE
     }
 

@@ -199,6 +199,9 @@ object Garage {
             return
         }
         update(Phase.PRESSING, "Pressing…")
+        // What the press will do, from what myQ said before it (its first frame after a press is stale).
+        val before = _state.value.status
+        val going = if (before.startsWith("Open", ignoreCase = true) || before.startsWith("Stopped", ignoreCase = true)) "Closing…" else "Opening…"
         val clicked = button.performAction(AccessibilityNodeInfo.ACTION_CLICK) ||
             tapCenter(svc, bounds(button))
         GearslipLog.i("garage: pressed=$clicked after ${SystemClock.elapsedRealtime() - startedAt}ms")
@@ -207,10 +210,9 @@ object Garage {
             goBack()
             return
         }
-        // Give myQ a moment to show "Opening…"/"Closing…" so the car screen can echo it.
+        _state.value = _state.value.copy(status = going, statusAt = SystemClock.elapsedRealtime())
         main.postDelayed({
-            service?.let { s -> myQRoot(s)?.let(::readStatus) }
-            finish("Sent ✓")
+            finish("Sent ✓ $going")
             goBack()
         }, AFTER_PRESS_MS)
     }

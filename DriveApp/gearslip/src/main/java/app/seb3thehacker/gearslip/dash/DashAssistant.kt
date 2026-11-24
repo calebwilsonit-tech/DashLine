@@ -148,6 +148,8 @@ object DashAssistant {
         .put(fn("media_control", "Control what's playing.", "action" to "One of: pause, resume, next, previous"))
         .put(fn("garage_door", "Open or close the garage door (it toggles).", required = emptyList()))
         .put(fn("navigate_to", "Start turn-by-turn directions to a place, address or business.", "destination" to "Where to go"))
+        .put(fn("drive_control", "Control the current drive.", "action" to "One of: eta, cancel, mute_directions, unmute_directions"))
+        .put(fn("find_on_route", "Find a stop along the current route, like gas or coffee.", "query" to "What to look for"))
         .put(fn("web_search", "Look up current information on the web.", "query" to "Search query"))
 
     private fun fn(name: String, description: String, vararg params: Pair<String, String>, required: List<String>? = null): JSONObject {
@@ -172,6 +174,8 @@ object DashAssistant {
                 "Okay, the garage door."
             }
             "web_search" -> search(key, model, args.optString("query"))
+            "drive_control" -> drive(args.optString("action"))
+            "find_on_route" -> { DashNav.searchAlongRoute(args.optString("query")); DashNav.showMap.value++; "Looking along your route." }
             "navigate_to" -> {
                 DashNav.navigateTo(args.optString("destination"))
                 "Getting directions to ${args.optString("destination")}."
@@ -218,6 +222,18 @@ object DashAssistant {
         else -> "Sorry, I can't do that with the music."
     }
 
+    private fun drive(action: String): String {
+        val nav = DashNav.session.state.value
+        return when (action.lowercase()) {
+            "eta" -> if (!nav.navigating) "You're not navigating right now."
+                else "${minutes(nav.remainingDuration)} to go, ${miles(nav.remainingDistance)}. You'll get there at ${android.text.format.DateFormat.format("h:mm a", System.currentTimeMillis() + (nav.remainingDuration * 1000).toLong())}."
+            "cancel" -> { DashNav.stop(); "Navigation ended." }
+            "mute_directions" -> { DashNav.voiceOn.value = false; "Directions muted." }
+            "unmute_directions" -> { DashNav.voiceOn.value = true; "Directions on." }
+            else -> "Sorry, I can't do that with the drive."
+        }
+    }
+
     /** Works without a key or a connection: the commands a driver needs most. */
     private suspend fun local(context: Context, said: String): String? {
         val t = said.lowercase().replace(Regex("[.,!?]"), "").trim()
@@ -226,6 +242,10 @@ object DashAssistant {
             return text(context, it.groupValues[1], it.groupValues[2])
         }
         when (t) {
+            "whats my eta", "what's my eta", "eta", "when will i get there", "how long left" -> return drive("eta")
+            "cancel navigation", "stop navigation", "end navigation", "end route" -> return drive("cancel")
+            "mute directions", "mute navigation", "quiet" -> return drive("mute_directions")
+            "unmute directions", "unmute navigation" -> return drive("unmute_directions")
             "pause", "stop the music", "pause the music" -> return media("pause")
             "resume", "play", "play music" -> return media("resume")
             "next", "skip", "next song" -> return media("next")
@@ -234,6 +254,10 @@ object DashAssistant {
                 Garage.press(context)
                 return "Okay, the garage door."
             }
+        }
+        Regex("^(?:find|add a|add|look for) (.+?) (?:on the way|along the way|on my route|along the route|stop)$").find(t)?.let {
+            DashNav.searchAlongRoute(it.groupValues[1]); DashNav.showMap.value++
+            return "Looking along your route."
         }
         Regex("^(?:navigate to|directions to|take me to|drive to|go to) (.+)$").find(t)?.let {
             DashNav.navigateTo(it.groupValues[1])

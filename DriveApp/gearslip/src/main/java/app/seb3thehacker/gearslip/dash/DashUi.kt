@@ -1,8 +1,20 @@
 package app.seb3thehacker.gearslip.dash
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -44,6 +56,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -142,7 +155,8 @@ fun DashUi() {
     }
 
     val themeId by DashPrefs.theme.collectAsState()
-    val theme = DashThemes.byId(themeId)
+    val accentPick by DashPrefs.accent.collectAsState()
+    val theme = DashThemes.byId(themeId).let { if (accentPick != 0L) it.copy(accent = Color(accentPick)) else it }
     var screen by remember { mutableStateOf(DashScreen.Home) }
 
     // The car's own hardware keys.
@@ -207,15 +221,21 @@ fun DashUi() {
                         .fillMaxHeight()
                         .padding(top = 10.dp, end = 10.dp, bottom = 10.dp),
                 ) {
-                    when (screen) {
-                        DashScreen.Home -> Dashboard(open = { screen = it })
-                        DashScreen.Map -> DashMapScreen()
-                        DashScreen.Music -> MusicScreen()
-                        DashScreen.Phone -> ContactsScreen()
-                        DashScreen.Messages -> MessagesScreen()
-                        DashScreen.Garage -> GarageScreen()
-                        DashScreen.Settings -> SettingsScreen(open = { screen = it })
-                        DashScreen.Latency, DashScreen.Classic -> Unit
+                    AnimatedContent(
+                        targetState = screen,
+                        transitionSpec = { dashScreenTransition(initialState, targetState) },
+                        label = "dash-screen",
+                    ) { current ->
+                        when (current) {
+                            DashScreen.Home -> Dashboard(open = { screen = it })
+                            DashScreen.Map -> DashMapScreen()
+                            DashScreen.Music -> MusicScreen()
+                            DashScreen.Phone -> ContactsScreen()
+                            DashScreen.Messages -> MessagesScreen()
+                            DashScreen.Garage -> GarageScreen()
+                            DashScreen.Settings -> SettingsScreen(open = { screen = it })
+                            DashScreen.Latency, DashScreen.Classic -> Unit
+                        }
                     }
                 }
             }
@@ -229,6 +249,53 @@ fun DashUi() {
             }
         }
     }
+}
+
+// --- screen transitions -----------------------------------------------------------------------
+
+/** Origin on the Dashboard where each card sits, so opening it expands smoothly out of its pane. */
+private fun paneOrigin(s: DashScreen): Pair<TransformOrigin, Float>? = when (s) {
+    DashScreen.Map -> TransformOrigin(0.295f, 0.41f) to 0.58f
+    DashScreen.Music -> TransformOrigin(0.795f, 0.28f) to 0.46f
+    DashScreen.Messages -> TransformOrigin(0.795f, 0.78f) to 0.46f
+    DashScreen.Garage -> TransformOrigin(0.295f, 0.91f) to 0.56f
+    else -> null
+}
+
+private val screenOrder = listOf(
+    DashScreen.Home, DashScreen.Map, DashScreen.Music,
+    DashScreen.Phone, DashScreen.Messages, DashScreen.Garage, DashScreen.Settings,
+)
+
+private fun dashScreenTransition(from: DashScreen, to: DashScreen): ContentTransform {
+    val fast = tween<Float>(240, easing = FastOutSlowInEasing)
+    val out = tween<Float>(200, easing = FastOutSlowInEasing)
+    // Expanding from a Dashboard card into its full screen.
+    if (from == DashScreen.Home) {
+        paneOrigin(to)?.let { (origin, scale) ->
+            return (scaleIn(fast, initialScale = scale, transformOrigin = origin) + fadeIn(fast))
+                .togetherWith(scaleOut(out, targetScale = 0.96f) + fadeOut(out))
+                .apply { targetContentZIndex = 1f }
+        }
+        return (scaleIn(fast, initialScale = 0.92f) + fadeIn(fast))
+            .togetherWith(fadeOut(out))
+            .apply { targetContentZIndex = 1f }
+    }
+    // Collapsing back into the Dashboard card.
+    if (to == DashScreen.Home) {
+        paneOrigin(from)?.let { (origin, scale) ->
+            return (scaleIn(fast, initialScale = 0.96f) + fadeIn(fast))
+                .togetherWith(scaleOut(out, targetScale = scale, transformOrigin = origin) + fadeOut(out))
+                .apply { targetContentZIndex = 0f }
+        }
+        return (scaleIn(fast, initialScale = 0.96f) + fadeIn(fast))
+            .togetherWith(scaleOut(out, targetScale = 0.92f) + fadeOut(out))
+    }
+    // Rail-to-rail jump: directional vertical slide following the rail order.
+    val dir = if (screenOrder.indexOf(to) >= screenOrder.indexOf(from)) 1 else -1
+    val slideIn = slideInVertically(tween(220, easing = FastOutSlowInEasing)) { dir * (it / 7) } + fadeIn(fast)
+    val slideOut = slideOutVertically(tween(180, easing = FastOutSlowInEasing)) { -dir * (it / 7) } + fadeOut(out)
+    return slideIn.togetherWith(slideOut)
 }
 
 // --- rail -------------------------------------------------------------------------------------
@@ -338,6 +405,7 @@ private fun MapPane(modifier: Modifier, onTap: () -> Unit) {
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) { Clock(size = 22.sp) }
         }
+        SpeedBadge(Modifier.align(Alignment.BottomEnd).padding(8.dp), compact = true)
     }
 }
 
@@ -651,6 +719,13 @@ private fun MessagesScreen() {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {
                         NotificationBody(n, Modifier.fillMaxWidth(), lines = 3)
+                        // The conversation's recent lines, when the app sends them (group chats show who said what).
+                        if (n.lines.size > 1) {
+                            Spacer(Modifier.height(4.dp))
+                            n.lines.takeLast(4).forEach { line ->
+                                Label("${line.sender?.let { "$it: " }.orEmpty()}${line.text}", 13.sp, t.textDim, maxLines = 2)
+                            }
+                        }
                         Spacer(Modifier.height(8.dp))
                         MessageActions(n, compact = false)
                     }
@@ -761,9 +836,12 @@ private fun SettingsScreen(open: (DashScreen) -> Unit) {
     val current by DashPrefs.theme.collectAsState()
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Label("Theme", 20.sp, weight = FontWeight.Bold)
-        Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            Modifier.fillMaxWidth().weight(1f).horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             for (theme in DashThemes.all) {
-                ThemeSwatch(theme, selected = theme.id == current, modifier = Modifier.weight(1f).fillMaxHeight()) {
+                ThemeSwatch(theme, selected = theme.id == current, modifier = Modifier.width(150.dp).fillMaxHeight()) {
                     DashPrefs.setTheme(theme.id)
                 }
             }

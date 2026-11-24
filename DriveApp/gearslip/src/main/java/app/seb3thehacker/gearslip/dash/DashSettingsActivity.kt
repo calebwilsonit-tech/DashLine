@@ -6,6 +6,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -106,6 +111,34 @@ class DashSettingsActivity : ComponentActivity() {
                         Text("Maps", style = MaterialTheme.typography.titleMedium)
                         remember { DashNav.init(this@DashSettingsActivity); true }
                         val noGoogle by DashNav.noGoogle.collectAsState()
+                        val imperial by DashNav.imperial.collectAsState()
+                        val voiceSpeed by DashNav.voiceSpeed.collectAsState()
+                        val buildings3d by DashNav.buildings3d.collectAsState()
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Units: ${if (imperial) "Miles & mph" else "Kilometers & km/h"}")
+                                Text("Applies to distances, speedometer, speed limits, and spoken turns.", style = MaterialTheme.typography.bodySmall)
+                            }
+                            Switch(checked = imperial, onCheckedChange = DashNav::setImperial)
+                        }
+                        Text("Spoken directions speed", style = MaterialTheme.typography.bodyMedium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(0.85f to "Slow", 1.0f to "Normal", 1.15f to "Brisk", 1.3f to "Fast").forEach { (rate, label) ->
+                                val selected = kotlin.math.abs(voiceSpeed - rate) < 0.05f
+                                if (selected) {
+                                    Button(onClick = { DashNav.setVoiceSpeed(rate) }) { Text(label) }
+                                } else {
+                                    OutlinedButton(onClick = { DashNav.setVoiceSpeed(rate) }) { Text(label) }
+                                }
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("3D buildings")
+                                Text("Show extruded 3D buildings when zoomed in.", style = MaterialTheme.typography.bodySmall)
+                            }
+                            Switch(checked = buildings3d, onCheckedChange = DashNav::setBuildings3d)
+                        }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text("Google-free maps")
@@ -114,6 +147,22 @@ class DashSettingsActivity : ComponentActivity() {
                             Switch(checked = noGoogle, onCheckedChange = DashNav::setNoGoogle)
                         }
                         OfflineMaps()
+
+                        Spacer(Modifier.padding(4.dp))
+                        Text("Accent color", style = MaterialTheme.typography.titleMedium)
+                        Text("Your own color on any theme. Pick the first to use the theme's.", style = MaterialTheme.typography.bodySmall)
+                        val accent by DashPrefs.accent.collectAsState()
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            (listOf(0L) + DashThemes.ACCENTS).forEach { c ->
+                                androidx.compose.foundation.layout.Box(
+                                    Modifier.size(34.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .background(if (c == 0L) androidx.compose.ui.graphics.Color.Gray else androidx.compose.ui.graphics.Color(c))
+                                        .border(if (c == accent) 3.dp else 0.dp, androidx.compose.ui.graphics.Color.White, androidx.compose.foundation.shape.CircleShape)
+                                        .clickable { DashPrefs.setAccent(c) },
+                                )
+                            }
+                        }
 
                         Spacer(Modifier.padding(4.dp))
                         Text("Music", style = MaterialTheme.typography.titleMedium)
@@ -206,6 +255,26 @@ private fun OfflineMaps() {
                     tp != null -> Unit
                     tr.id in st.tilesInstalled -> OutlinedButton(onClick = { DashOffline.deleteTiles(tr) }) { Text("Delete") }
                     else -> OutlinedButton(onClick = { DashOffline.downloadTiles(tr) }) { Text("Get") }
+                }
+            }
+        }
+        // Offline place & address search without signal: Vela's SQLite place pack for the same region.
+        st.places[r.id]?.let { pr ->
+            val pp = st.placesDownloading[pr.id]
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 16.dp)) {
+                Text(
+                    when {
+                        pp != null -> "Place pack: downloading\u2026 $pp%"
+                        pr.id in st.placesInstalled -> "Place pack installed \u00b7 ${pr.sizeMb} MB"
+                        else -> "Place pack for offline search \u00b7 ${pr.sizeMb} MB"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f),
+                )
+                when {
+                    pp != null -> Unit
+                    pr.id in st.placesInstalled -> OutlinedButton(onClick = { DashOffline.deletePlaces(pr) }) { Text("Delete") }
+                    else -> OutlinedButton(onClick = { DashOffline.downloadPlaces(pr) }) { Text("Get") }
                 }
             }
         }

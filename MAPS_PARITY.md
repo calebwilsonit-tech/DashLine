@@ -17,7 +17,7 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Commands: "take me home", "navigate to mom's house" | ✅ 0.2.0 |
 | Results with rating, category, distance | ✅ 0.2.0 |
 | Search along the route, with minutes added per stop (tap one to add it as a stop) | ✅ 0.3.0 |
-| Open now filter; sort by best, nearest, top rated | ✅ 0.3.0 (price filter ⬜) |
+| Open now filter; price filter; sort by best, nearest, top rated | ✅ 0.3.0 / 0.8.0 |
 | Chain's other locations, More results, Search this area | ✅ 0.6.0 |
 | Contacts' addresses in search and voice ("navigate to Mom") | ✅ 0.5.0 |
 
@@ -37,7 +37,7 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Up to four routes with time and traffic; pick one | ✅ 0.2.0 |
 | Route line colored by traffic | ✅ 0.2.0 |
 | Stops: add, remove, reorder (◀), reverse; round trip | ✅ 0.3.0–0.6.0 |
-| Avoid tolls / highways (remembered) | ✅ 0.3.0 (ferries, no-toll comparison ⬜) |
+| Avoid tolls / highways / ferries (remembered); no-toll comparison | ✅ 0.3.0 / 0.8.0 |
 | Depart at / arrive by | ➖ (a trip-planning screen, not for the driver's seat) |
 | Step list before starting | ✅ 0.3.0 |
 | Save a trip (destination and stops) | ✅ 0.5.0 |
@@ -62,10 +62,10 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Voice detail levels (everything / brief / highway exits only) | ✅ 0.3.0 |
 | Step list during the drive (tap the turn card) | ✅ 0.3.0 |
 | Pause a drive | ✅ 0.4.0 |
-| Road-ahead bar (traffic and cameras); turn arrow on the route; road-number shields on the line | ✅ 0.5.0 / 0.6.0 (cross-street callouts ⬜) |
-| Speed cameras (OpenStreetMap, on the map, banner and spoken) | ✅ 0.3.0 (red-light cameras ⬜) |
+| Road-ahead bar (traffic and cameras); turn arrow on the route; road-number shields on the line; current-road & traffic-light callouts | ✅ 0.5.0–0.8.0 |
+| Speed & red-light cameras (OpenStreetMap, on the map, banner and spoken) | ✅ 0.3.0 / 0.8.0 |
 | Resume a drive after a restart | ✅ 0.4.0 |
-| Gas stations only on the map while driving | ⬜ Next |
+| Gas stations only on the map while driving | ✅ 0.8.0 |
 
 ## Map
 | Feature | Status |
@@ -74,13 +74,13 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Your position with heading arrow | ✅ 0.4.0 |
 | Map styles: auto, Liberty, Bright, Positron, Fiord, Dark, Satellite | ✅ 0.4.0 / 0.5.0 |
 | Live traffic overlay while browsing (🚦 toggle) | ✅ 0.3.0 |
-| Place icons from Vela's open data | ⬜ Next |
-| 3D buildings, tilt | ⬜ Next |
-| Offline regions (447, from Vela's catalog) for routing and speed limits; map tiles for no signal | ✅ 0.4.0 / 0.6.0 (offline place packs ⬜) |
+| Place icons from Vela's open data | ✅ 0.8.0 |
+| 3D buildings, tilt | ✅ 0.8.0 |
+| Offline regions (447, from Vela's catalog) for routing, speed limits, map tiles, and offline place packs | ✅ 0.4.0–0.8.0 |
 
 ## Settings, privacy
 | Feature | Status |
 | --- | --- |
-| Units, voice speed | ⬜ Next |
+| Units, voice speed | ✅ 0.8.0 |
 | Google-free mode (phone settings) | ✅ 0.5.0 |
 | Diagnostics, trip recording | ➖ |

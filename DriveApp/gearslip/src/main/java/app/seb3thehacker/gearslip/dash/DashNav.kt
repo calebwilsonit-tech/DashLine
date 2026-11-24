@@ -103,13 +103,27 @@ object DashNav {
     /** Route options (Vela's RoutingPrefs), remembered. */
     val avoidTolls = MutableStateFlow(false)
     val avoidHighways = MutableStateFlow(false)
+    val avoidFerries = MutableStateFlow(false)
+    /** Units: true = miles/mph/ft, false = km/km/h/m. */
+    val imperial = MutableStateFlow(true)
+    /** Spoken directions speed (TTS speech rate: 0.85..1.3). */
+    val voiceSpeed = MutableStateFlow(1.0f)
+    /** 3D extruded buildings and tilted 3D camera on the map. */
+    val buildings3d = MutableStateFlow(true)
+    val tilt3d = MutableStateFlow(true)
     /** How much the voice says (Vela's SpokenDetail): everything, brief, or highway exits only. */
     val voiceDetail = MutableStateFlow(app.vela.core.nav.SpokenDetail.Mode.FULL)
     /** Google's live traffic drawn on the map while browsing. */
     val trafficLayer = MutableStateFlow(true)
-    /** Speed cameras along the route, and the one being warned about. */
-    val cameras = MutableStateFlow<List<LatLng>>(emptyList())
-    val cameraAhead = MutableStateFlow(false)
+
+    @Immutable
+    data class RouteCam(val loc: LatLng, val redLight: Boolean = false)
+
+    /** Speed and red-light cameras along the route, and the one being warned about. */
+    val cameras = MutableStateFlow<List<RouteCam>>(emptyList())
+    val cameraAhead = MutableStateFlow<RouteCam?>(null)
+    /** No-toll alternative route fetched for comparison when the primary route has tolls. */
+    val noTollRoute = MutableStateFlow<Route?>(null)
 
     private var prefs: android.content.SharedPreferences? = null
     private var appContext: Context? = null
@@ -140,6 +154,11 @@ object DashNav {
 
     fun setAvoidTolls(on: Boolean) { avoidTolls.value = on; app.vela.core.data.RoutingPrefs.avoidTolls = on; prefs?.edit()?.putBoolean("avoidTolls", on)?.apply(); reroutePreview() }
     fun setAvoidHighways(on: Boolean) { avoidHighways.value = on; app.vela.core.data.RoutingPrefs.avoidHighways = on; prefs?.edit()?.putBoolean("avoidHighways", on)?.apply(); reroutePreview() }
+    fun setAvoidFerries(on: Boolean) { avoidFerries.value = on; app.vela.core.data.RoutingPrefs.avoidFerries = on; prefs?.edit()?.putBoolean("avoidFerries", on)?.apply(); reroutePreview() }
+    fun setImperial(on: Boolean) { imperial.value = on; prefs?.edit()?.putBoolean("imperial", on)?.apply() }
+    fun setVoiceSpeed(rate: Float) { val r = rate.coerceIn(0.75f, 1.4f); voiceSpeed.value = r; DirectionsVoice.setSpeechRate(r); prefs?.edit()?.putFloat("voiceSpeed", r)?.apply() }
+    fun setBuildings3d(on: Boolean) { buildings3d.value = on; prefs?.edit()?.putBoolean("buildings3d", on)?.apply() }
+    fun setTilt3d(on: Boolean) { tilt3d.value = on; prefs?.edit()?.putBoolean("tilt3d", on)?.apply() }
     fun setVoiceDetail(m: app.vela.core.nav.SpokenDetail.Mode) { voiceDetail.value = m; app.vela.core.nav.SpokenDetail.mode = m; prefs?.edit()?.putString("voiceDetail", m.name)?.apply() }
     fun setTrafficLayer(on: Boolean) { trafficLayer.value = on; prefs?.edit()?.putBoolean("traffic", on)?.apply() }
 
@@ -170,13 +189,20 @@ object DashNav {
             }
             avoidTolls.value = p.getBoolean("avoidTolls", false)
             avoidHighways.value = p.getBoolean("avoidHighways", false)
+            avoidFerries.value = p.getBoolean("avoidFerries", false)
+            imperial.value = p.getBoolean("imperial", true)
+            voiceSpeed.value = p.getFloat("voiceSpeed", 1.0f)
+            buildings3d.value = p.getBoolean("buildings3d", true)
+            tilt3d.value = p.getBoolean("tilt3d", true)
             trafficLayer.value = p.getBoolean("traffic", true)
             voiceDetail.value = runCatching { app.vela.core.nav.SpokenDetail.Mode.valueOf(p.getString("voiceDetail", "FULL")!!) }
                 .getOrDefault(app.vela.core.nav.SpokenDetail.Mode.FULL)
         }
         app.vela.core.data.RoutingPrefs.avoidTolls = avoidTolls.value
         app.vela.core.data.RoutingPrefs.avoidHighways = avoidHighways.value
+        app.vela.core.data.RoutingPrefs.avoidFerries = avoidFerries.value
         app.vela.core.nav.SpokenDetail.mode = voiceDetail.value
+        DirectionsVoice.setSpeechRate(voiceSpeed.value)
         http = CoreModule.okHttpClient()
         app.vela.data.StreamedSpeedLimit.http = http
         calibration = CalibrationStore(c, http)
@@ -258,14 +284,20 @@ object DashNav {
                         runCatching { app.vela.data.StreamedSpeedLimit.limitAt(uris, at.lat, at.lng) }.getOrNull()
                     }
             }
-            val mph = kmh?.let { (it / 1.609344 / 5).let { v -> (Math.round(v) * 5).toInt() } }
-            if (!limitLogged) { limitLogged = true; GearslipLog.i("nav: first speed limit lookup -> ${mph ?: "none"} (overlays ${overlays?.size ?: 0})") }
-            if (mph != speedLimitMph.value) {
-                GearslipLog.i("nav: speed limit ${mph ?: "unknown"}")
-                speedLimitMph.value = mph
+            val imp = imperial.value
+            val limit = kmh?.let {
+                if (imp) (it / 1.609344 / 5).let { v -> (Math.round(v) * 5).toInt() }
+                else (it / 5.0).let { v -> (Math.round(v) * 5).toInt() }
             }
-            val over = mph != null && speedMps != null && speedMps * 2.23694f > mph + 7
-            if (over && !speeding.value && voiceOn.value) DirectionsVoice.speak("Speed limit $mph")
+            if (!limitLogged) { limitLogged = true; GearslipLog.i("nav: first speed limit lookup -> ${limit ?: "none"} (overlays ${overlays?.size ?: 0})") }
+            if (limit != speedLimitMph.value) {
+                GearslipLog.i("nav: speed limit ${limit ?: "unknown"}")
+                speedLimitMph.value = limit
+            }
+            val speedNow = speedMps?.let { if (imp) it * 2.23694f else it * 3.6f }
+            val margin = if (imp) 7 else 11
+            val over = limit != null && speedNow != null && speedNow > limit + margin
+            if (over && !speeding.value && voiceOn.value) DirectionsVoice.speak("Speed limit $limit")
             speeding.value = over
         }
     }
@@ -288,6 +320,25 @@ object DashNav {
             .sortedBy { (b, _) -> (b[2] - b[0]) * (b[3] - b[1]) }.map { it.second }.take(2)
     }
 
+    /** Vela's open-data places overlays (one PMTiles archive per region), listed once per run. */
+    private var placesOverlays: List<Pair<DoubleArray, String>>? = null
+
+    suspend fun placesOverlayUri(at: LatLng): String? = withContext(Dispatchers.IO) {
+        if (!online.value) return@withContext null
+        val list = placesOverlays ?: runCatching {
+            val body = http.newCall(okhttp3.Request.Builder().url(app.vela.core.config.VelaLinks.placesManifest()).build()).execute()
+                .use { if (it.isSuccessful) it.body?.string() else null } ?: return@withContext null
+            val arr = org.json.JSONObject(body).getJSONArray("regions")
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                val b = o.getJSONArray("bbox")
+                doubleArrayOf(b.getDouble(0), b.getDouble(1), b.getDouble(2), b.getDouble(3)) to "pmtiles://" + o.getString("url")
+            }
+        }.getOrNull()?.also { placesOverlays = it } ?: return@withContext null
+        list.filter { (b, _) -> at.lat in b[0]..b[2] && at.lng in b[1]..b[3] && b[3] - b[1] < 60 }
+            .minByOrNull { (b, _) -> (b[2] - b[0]) * (b[3] - b[1]) }?.second
+    }
+
     private fun onFix(loc: Location) {
         val at = LatLng(loc.latitude, loc.longitude)
         updateLimit(at, if (loc.hasSpeed()) loc.speed else null)
@@ -296,7 +347,7 @@ object DashNav {
             checkCameras(at, if (loc.hasSpeed()) loc.speed.toDouble() else 0.0)
             session.onLocation(
                 at,
-                imperial = true,
+                imperial = imperial.value,
                 speedMps = if (loc.hasSpeed()) loc.speed.toDouble() else null,
                 accuracyM = if (loc.hasAccuracy()) loc.accuracy.toDouble() else null,
                 bearingDeg = if (loc.hasBearing()) loc.bearing.toDouble() else null,
@@ -414,6 +465,7 @@ object DashNav {
         DashPlaces.addRecent(place)
         val keepStops = if (_state.value.destination?.location == place.location || place.id == "dash:start") _state.value.stops else emptyList()
         _state.value = _state.value.copy(phase = Phase.ROUTING, destination = place, routes = emptyList(), chosen = 0, stops = keepStops, details = null, alongRoute = false)
+        noTollRoute.value = null
         camera.value = Camera.OVERVIEW
         loadDetails(place)
         scope.launch {
@@ -424,18 +476,51 @@ object DashNav {
                         waypoints = keepStops.map { it.location },
                         avoidTolls = avoidTolls.value,
                         avoidHighways = avoidHighways.value,
+                        avoidFerries = avoidFerries.value,
                     )
                 }
             }
                 .onSuccess { routes ->
                     _state.value = if (routes.isEmpty()) _state.value.copy(phase = Phase.ERROR, error = "No route found")
                     else _state.value.copy(phase = Phase.PREVIEW, routes = routes.take(4), chosen = 0)
+                    // No-toll comparison: if tolls aren't avoided and the best route may have tolls, fetch a toll-free option.
+                    if (!avoidTolls.value && routes.firstOrNull()?.tolls == app.vela.core.model.TollNote.MAY_HAVE_TOLLS &&
+                        routes.none { it.tolls == app.vela.core.model.TollNote.NO_TOLLS }
+                    ) {
+                        scope.launch {
+                            val free = runCatching {
+                                withContext(Dispatchers.IO) {
+                                    source.directions(
+                                        from, place.location,
+                                        waypoints = keepStops.map { it.location },
+                                        avoidTolls = true,
+                                        avoidHighways = avoidHighways.value,
+                                        avoidFerries = avoidFerries.value,
+                                    ).firstOrNull()
+                                }
+                            }.getOrNull()
+                            if (free != null && _state.value.phase == Phase.PREVIEW && _state.value.destination?.location == place.location) {
+                                noTollRoute.value = free
+                            }
+                        }
+                    }
                 }
                 .onFailure {
                     GearslipLog.w("nav: directions failed: ${it.javaClass.simpleName}")
                     _state.value = _state.value.copy(phase = Phase.ERROR, error = "Couldn't get directions")
                 }
         }
+    }
+
+    /** Switches the route preview to the fetched toll-free comparison route. */
+    fun useNoTollRoute() {
+        val free = noTollRoute.value ?: return
+        val s = _state.value
+        if (s.phase != Phase.PREVIEW) return
+        val updated = (s.routes + free).distinctBy { it.polyline.size to it.distanceMeters.toInt() }.take(4)
+        val idx = updated.indexOf(free).coerceAtLeast(0)
+        _state.value = s.copy(routes = updated, chosen = idx)
+        noTollRoute.value = null
     }
 
     /** Hours, open now, phone and gas price for [place], filled in when Google answers. */
@@ -527,7 +612,7 @@ object DashNav {
         }
     }
 
-    // --- speed cameras -----------------------------------------------------------------------
+    // --- speed & red-light cameras -----------------------------------------------------------
 
     private val announced = mutableSetOf<String>()
 
@@ -536,22 +621,51 @@ object DashNav {
         announced.clear()
         scope.launch {
             val found = runCatching {
-                withContext(Dispatchers.IO) { app.vela.core.data.OverpassSpeedCameras.fetchAlongCorridor(http, route.polyline) }
+                withContext(Dispatchers.IO) {
+                    val speed = app.vela.core.data.OverpassSpeedCameras.fetchAlongCorridor(http, route.polyline)
+                        .orEmpty().map { RouteCam(it.loc, redLight = false) }
+                    val redLight = fetchRedLightCameras(route.polyline)
+                    speed + redLight
+                }
             }.getOrNull().orEmpty()
-            cameras.value = found.map { it.loc }
-            if (found.isNotEmpty()) GearslipLog.i("nav: ${found.size} speed cameras along the route")
+            cameras.value = found
+            if (found.isNotEmpty()) GearslipLog.i("nav: ${found.size} cameras along the route (${found.count { it.redLight }} red-light)")
         }
+    }
+
+    /** Red-light enforcement cameras along [polyline] from Overpass (OSM `camera:type=red_light` / `enforcement=traffic_signals`). */
+    private fun fetchRedLightCameras(polyline: List<LatLng>): List<RouteCam> {
+        if (polyline.size < 2) return emptyList()
+        val maxPts = 120
+        val pts = if (polyline.size <= maxPts) polyline else {
+            val stride = (polyline.size - 1).toDouble() / (maxPts - 1)
+            (0 until maxPts).map { polyline[Math.round(it * stride).toInt().coerceAtMost(polyline.size - 1)] }
+        }
+        val coords = pts.joinToString(",") { String.format(java.util.Locale.US, "%.5f,%.5f", it.lat, it.lng) }
+        val q = "[out:json][timeout:20];(node[\"camera:type\"=\"red_light\"](around:150,$coords);node[\"enforcement\"=\"traffic_signals\"](around:150,$coords););out body 500;"
+        return runCatching {
+            val body = app.vela.core.data.OverpassEndpoints.run(http, q) { it.string() } ?: return emptyList()
+            val arr = org.json.JSONObject(body).optJSONArray("elements") ?: return emptyList()
+            (0 until arr.length()).mapNotNull { i ->
+                val o = arr.getJSONObject(i)
+                val lat = o.optDouble("lat", Double.NaN)
+                val lon = o.optDouble("lon", Double.NaN)
+                if (lat.isNaN() || lon.isNaN()) null else RouteCam(LatLng(lat, lon), redLight = true)
+            }
+        }.getOrDefault(emptyList())
     }
 
     private fun checkCameras(at: LatLng, speedMps: Double) {
         val list = cameras.value
-        if (list.isEmpty()) { cameraAhead.value = false; return }
+        if (list.isEmpty()) { cameraAhead.value = null; return }
         val lead = app.vela.core.nav.CameraAlerts.leadDistanceM(speedMps.coerceAtLeast(8.0))
-        val close = list.firstOrNull { metersBetween(it, at) < lead }
-        cameraAhead.value = close != null
+        val close = list.firstOrNull { metersBetween(it.loc, at) < lead }
+        cameraAhead.value = close
         if (close != null) {
-            val key = "${close.lat},${close.lng}"
-            if (announced.add(key) && voiceOn.value) DirectionsVoice.speak("Speed camera ahead")
+            val key = "${close.loc.lat},${close.loc.lng}"
+            if (announced.add(key) && voiceOn.value) {
+                DirectionsVoice.speak(if (close.redLight) "Red light camera ahead" else "Speed camera ahead")
+            }
         }
     }
 
@@ -762,7 +876,8 @@ object DashNav {
         if (::session.isInitialized) session.stop()
         prefs?.edit()?.remove("activeDrive")?.apply()
         cameras.value = emptyList()
-        cameraAhead.value = false
+        cameraAhead.value = null
+        noTollRoute.value = null
         _state.value = State()
         camera.value = Camera.FOLLOW
         GearslipLog.i("nav: navigation ended")
@@ -770,6 +885,7 @@ object DashNav {
 
     fun clear() {
         if (_state.value.phase != Phase.NAVIGATING) {
+            noTollRoute.value = null
             _state.value = State()
             camera.value = Camera.FOLLOW
         }

@@ -43,6 +43,10 @@ object DashOffline {
         val tiles: Map<String, Region> = emptyMap(),
         val tilesInstalled: Set<String> = emptySet(),
         val tilesDownloading: Map<String, Int> = emptyMap(),
+        /** Offline place packs (Vela's SQLite POI + address databases), by region id. */
+        val places: Map<String, Region> = emptyMap(),
+        val placesInstalled: Set<String> = emptySet(),
+        val placesDownloading: Map<String, Int> = emptyMap(),
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -63,12 +67,21 @@ object DashOffline {
         root = dir
         app.vela.core.data.OfflineRoot.dir = context.applicationContext.filesDir
         tilesRoot = File(context.applicationContext.filesDir, "basemap")
-        _state.value = _state.value.copy(installed = installedIds(), tilesInstalled = tilesIds())
+        placesRoot = File(context.applicationContext.filesDir, "poi-packs")
+        reloadPlaces()
+        _state.value = _state.value.copy(installed = installedIds(), tilesInstalled = tilesIds(), placesInstalled = placesIds())
     }
 
     private var tilesRoot: File? = null
+    private var placesRoot: File? = null
     private fun tilesIds(): Set<String> = tilesRoot?.listFiles { f -> f.name.endsWith(".pmtiles") && f.length() > 0 }
         ?.map { it.name.removeSuffix(".pmtiles") }?.toSet().orEmpty()
+    private fun placesIds(): Set<String> = placesRoot?.listFiles { f -> f.name.endsWith(".db") && f.length() > 0 }
+        ?.map { it.name.removeSuffix(".db") }?.toSet().orEmpty()
+    private fun reloadPlaces() {
+        val paths = placesRoot?.listFiles { f -> f.name.endsWith(".db") && f.length() > 0 }?.map { it.absolutePath }.orEmpty()
+        app.vela.core.data.OfflinePacks.reload(paths)
+    }
 
     /** The installed map-tile file covering a point (smallest region first), or null. */
     fun tilesFor(lat: Double, lng: Double): File? {
@@ -146,6 +159,55 @@ object DashOffline {
         _state.value = _state.value.copy(tilesInstalled = tilesIds())
     }
 
+    private fun loadPlaces(context: Context) {
+        scope.launch {
+            val cache = File(context.cacheDir, "poi-pack-manifest.json")
+            val json = withContext(Dispatchers.IO) {
+                runCatching {
+                    http.newCall(Request.Builder().url(app.vela.core.config.VelaLinks.poiPackManifest()).build()).execute().use { r ->
+                        if (!r.isSuccessful) error("HTTP ${r.code}")
+                        r.body!!.string().also { cache.writeText(it) }
+                    }
+                }.getOrNull() ?: cache.takeIf { it.exists() }?.readText()
+            } ?: return@launch
+            val list = runCatching {
+                val arr = JSONObject(json).getJSONArray("regions")
+                (0 until arr.length()).map { i ->
+                    val o = arr.getJSONObject(i)
+                    val b = o.getJSONArray("bbox")
+                    Region(o.getString("id"), o.getString("name"), o.getString("url"), o.optDouble("sizeMb").toInt(), b.getDouble(0), b.getDouble(1), b.getDouble(2), b.getDouble(3))
+                }
+            }.getOrDefault(emptyList())
+            _state.value = _state.value.copy(places = list.associateBy { it.id })
+        }
+    }
+
+    fun downloadPlaces(region: Region) {
+        val dir = placesRoot ?: return
+        val key = "places:${region.id}"
+        if (key in jobs) return
+        _state.value = _state.value.copy(placesDownloading = _state.value.placesDownloading + (region.id to 0), error = "")
+        jobs[key] = scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                fetch(region.url, File(dir, "${region.id}.db")) { pct ->
+                    _state.value = _state.value.copy(placesDownloading = _state.value.placesDownloading + (region.id to pct))
+                }.also { done -> if (done) reloadPlaces() }
+            }
+            jobs.remove(key)
+            _state.value = _state.value.copy(
+                placesDownloading = _state.value.placesDownloading - region.id,
+                placesInstalled = placesIds(),
+                error = if (ok) "" else "${region.name} place pack didn't download. Try again on Wi-Fi.",
+            )
+        }
+    }
+
+    fun deletePlaces(region: Region) {
+        File(placesRoot ?: return, "${region.id}.db").delete()
+        reloadPlaces()
+        _state.value = _state.value.copy(placesInstalled = placesIds())
+    }
+
     /** Streams [url] into [dest] through a temp file; true when it landed. */
     private suspend fun fetch(url: String, dest: File, progress: (Int) -> Unit): Boolean = runCatching {
         dest.parentFile?.mkdirs()
@@ -182,6 +244,7 @@ object DashOffline {
         init(context)
         if (_state.value.catalog.isNotEmpty()) return
         loadTiles(context)
+        loadPlaces(context)
         scope.launch {
             val cache = File(context.cacheDir, "obf-manifest.json")
             val json = withContext(Dispatchers.IO) {

@@ -93,10 +93,10 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release")
-            // Dashline: no R8 for now. Vela's engine (Rhino JS, kotlinx-serialization, OsmAnd) leans on
-            // reflection; an unshrunk APK is bigger but can't lose a class at runtime.
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // Dashline: R8 on, with Vela's engine and its libraries kept whole (proguard-rules.pro):
+            // they lean on reflection. Test with a debug build without -PnoR8, which shrinks the same way.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         // Its own package, so a debug build installs beside the release one instead of over it.
@@ -151,12 +151,22 @@ android {
         // Speech-to-text (sherpa-onnx 1.13.8, static-link-onnxruntime build, in jniLibs) is the
         // only native code. One APK for all three, since the updater takes the release's only APK;
         // 32-bit x86 is left out, nothing that drives a car runs it.
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
+        // Dashline: release builds are 64-bit ARM only (the Pixel and every current phone); debug
+        // builds keep x86_64 for the PC emulator. Each extra ABI carried ~40 MB of native code.
+        val releasing = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+        ndk { abiFilters += if (releasing) listOf("arm64-v8a") else listOf("arm64-v8a", "x86_64") }
     }
 
     // Compressed, the three copies cost a 33 MB download instead of 75 MB; the phone unpacks
     // only its own at install.
-    packaging { jniLibs { useLegacyPackaging = true } }
+    packaging {
+        jniLibs { useLegacyPackaging = true }
+        // Dashline: the OsmAnd router jar carries desktop natives (26 MB osmand-linux-amd64.lib) and
+        // the trove jar its .java sources; neither can run on a phone.
+        resources {
+            excludes += listOf("osmand-*.lib", "**/*.dll", "**/*.dylib", "**/*.jnilib", "gnu/trove/**/*.java")
+        }
+    }
 
     testOptions {
         // GearslipLog calls android.util.Log, which is a stub on the local JVM.

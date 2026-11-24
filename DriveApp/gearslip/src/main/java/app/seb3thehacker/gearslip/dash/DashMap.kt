@@ -97,7 +97,7 @@ internal object DashMapHolder {
                 m.uiSettings.isLogoEnabled = false
                 m.uiSettings.isAttributionEnabled = true
                 m.uiSettings.isRotateGesturesEnabled = false
-                m.uiSettings.isTiltGesturesEnabled = false
+                m.uiSettings.isTiltGesturesEnabled = true
                 m.cameraPosition = CameraPosition.Builder().target(LatLng(39.5, -98.35)).zoom(3.0).build()
                 // A pan by hand stops the camera following until Re-center.
                 m.addOnCameraMoveStartedListener { reason ->
@@ -290,12 +290,49 @@ internal object DashMapHolder {
             s.addLayer(
                 CircleLayer(CAM_DOT, CAM_SRC).withProperties(
                     PropertyFactory.circleRadius(7f),
-                    PropertyFactory.circleColor("#FF9800"),
+                    PropertyFactory.circleColor(
+                        Expression.match(
+                            Expression.get("red"),
+                            Expression.literal("#FF9800"),
+                            Expression.stop(1, "#E53935"),
+                        ),
+                    ),
                     PropertyFactory.circleStrokeColor("#000000"),
                     PropertyFactory.circleStrokeWidth(2f),
                 ),
             )
             lastCams = null
+            // 3D buildings: style the basemap's building-3d layer or add our own FillExtrusionLayer.
+            if (url != SATELLITE) {
+                val isDark = url.endsWith("/dark") || url.endsWith("/fiord")
+                val bColor = if (isDark) "#2B323D" else "#D5DAE2"
+                val existing3d = s.getLayer("building-3d")
+                if (existing3d != null) {
+                    existing3d.setProperties(
+                        PropertyFactory.fillExtrusionColor(bColor),
+                        PropertyFactory.fillExtrusionOpacity(0.85f),
+                    )
+                } else if (s.getSource("openmaptiles") != null) {
+                    val b3d = org.maplibre.android.style.layers.FillExtrusionLayer(BUILDING_3D_LAYER, "openmaptiles").apply {
+                        sourceLayer = "building"
+                        minZoom = 15f
+                        setProperties(
+                            PropertyFactory.fillExtrusionColor(bColor),
+                            PropertyFactory.fillExtrusionHeight(Expression.coalesce(Expression.get("render_height"), Expression.literal(10))),
+                            PropertyFactory.fillExtrusionBase(Expression.coalesce(Expression.get("render_min_height"), Expression.literal(0))),
+                            PropertyFactory.fillExtrusionOpacity(0.85f),
+                        )
+                    }
+                    if (s.getLayer(ALT_LINE) != null) s.addLayerBelow(b3d, ALT_LINE) else s.addLayer(b3d)
+                }
+            }
+            // Open-data place icons (colored dots for Vela's Overture/OSM places overlay).
+            POI_COLORS.forEach { (k, col) -> s.addImage("dash-poi-$k", poiDotBitmap(col)) }
+            buildings3dShown = null
+            fuelOnlyShown = null
+            placesUriApplied = null
+            showBuildings3d(DashNav.buildings3d.value)
+            setFuelOnly(DashNav.session.state.value.navigating)
             s.addSource(GeoJsonSource(PIN_SRC))
             s.addLayer(
                 CircleLayer(PIN_DOT, PIN_SRC).withProperties(
@@ -330,7 +367,9 @@ internal object DashMapHolder {
             val f = Feature.fromGeometry(Point.fromLngLat(it.lng, it.lat))
             bearing?.let { b -> f.addNumberProperty("b", b) }
             s.getSourceAs<GeoJsonSource>(ME_SRC)?.setGeoJson(f)
-            s.getLayer(ME_ARROW)?.setProperties(PropertyFactory.visibility(if (bearing != null) Property.VISIBLE else Property.NONE))
+            val showArrow = bearing != null
+            s.getLayer(ME_ARROW)?.setProperties(PropertyFactory.visibility(if (showArrow) Property.VISIBLE else Property.NONE))
+            s.getLayer(ME_DOT)?.setProperties(PropertyFactory.visibility(if (showArrow) Property.NONE else Property.VISIBLE))
         }
         if (route !== lastRoute) {
             lastRoute = route
@@ -374,7 +413,10 @@ internal object DashMapHolder {
     }
 
     private var trafficShown: Boolean? = null
-    private var lastCams: List<app.vela.core.model.LatLng>? = null
+    private var lastCams: List<DashNav.RouteCam>? = null
+    private var buildings3dShown: Boolean? = null
+    private var fuelOnlyShown: Boolean? = null
+    private var placesUriApplied: String? = null
 
     fun showTraffic(on: Boolean) {
         val s = style ?: return
@@ -383,11 +425,107 @@ internal object DashMapHolder {
         s.getLayer(TRAFFIC_TILES_LAYER)?.setProperties(PropertyFactory.visibility(if (on) Property.VISIBLE else Property.NONE))
     }
 
-    fun drawCameras(cams: List<app.vela.core.model.LatLng>) {
+    fun showBuildings3d(on: Boolean) {
+        val s = style ?: return
+        if (buildings3dShown == on) return
+        buildings3dShown = on
+        val vis = PropertyFactory.visibility(if (on) Property.VISIBLE else Property.NONE)
+        s.getLayer("building-3d")?.setProperties(vis)
+        s.getLayer(BUILDING_3D_LAYER)?.setProperties(vis)
+    }
+
+    /** Gas stations only on the map while driving; full POIs (minus vegetation clutter) while browsing. */
+    fun setFuelOnly(fuelOnly: Boolean) {
+        val s = style ?: return
+        if (fuelOnlyShown == fuelOnly) return
+        fuelOnlyShown = fuelOnly
+        val isPoint = Expression.match(
+            Expression.geometryType(), Expression.literal(false),
+            Expression.stop("Point", true), Expression.stop("MultiPoint", true),
+        )
+        if (fuelOnly) {
+            val fuel = Expression.eq(Expression.get("class"), Expression.literal("fuel"))
+            listOf("poi_r1", "poi_r7", "poi_r20").forEach { id ->
+                (s.getLayer(id) as? org.maplibre.android.style.layers.SymbolLayer)?.setFilter(Expression.all(isPoint, fuel))
+            }
+            (s.getLayer(PLACES_LAYER) as? org.maplibre.android.style.layers.SymbolLayer)?.setFilter(
+                Expression.eq(Expression.get("group"), Expression.literal("fuel")),
+            )
+        } else {
+            val veg = Expression.match(
+                Expression.get("class"), Expression.literal(false),
+                Expression.stop("wood", true), Expression.stop("forest", true),
+                Expression.stop("tree", true), Expression.stop("grass", true), Expression.stop("wetland", true),
+            )
+            fun tier(id: String, lo: Int, hi: Int?) {
+                val parts = mutableListOf(isPoint, Expression.gte(Expression.get("rank"), Expression.literal(lo)), Expression.not(veg))
+                if (hi != null) parts += Expression.lt(Expression.get("rank"), Expression.literal(hi))
+                (s.getLayer(id) as? org.maplibre.android.style.layers.SymbolLayer)?.setFilter(Expression.all(*parts.toTypedArray()))
+            }
+            tier("poi_r1", 1, 7)
+            tier("poi_r7", 7, 20)
+            tier("poi_r20", 20, null)
+            (s.getLayer(PLACES_LAYER) as? org.maplibre.android.style.layers.SymbolLayer)?.setFilter(Expression.literal(true))
+        }
+    }
+
+    /** Streams Vela's open-data place icons (PMTiles) for the current region. */
+    fun setPlacesOverlay(uri: String?) {
+        val s = style ?: return
+        if (uri == placesUriApplied) return
+        placesUriApplied = uri
+        runCatching { s.removeLayer(PLACES_LAYER) }
+        runCatching { s.removeSource(PLACES_SRC) }
+        if (uri == null || styleUrl == SATELLITE) return
+        runCatching {
+            s.addSource(org.maplibre.android.style.sources.VectorSource(PLACES_SRC, uri))
+            val layer = org.maplibre.android.style.layers.SymbolLayer(PLACES_LAYER, PLACES_SRC).apply {
+                sourceLayer = "places"
+                minZoom = 14.5f
+                setProperties(
+                    PropertyFactory.iconImage(
+                        Expression.match(
+                            Expression.get("group"),
+                            Expression.literal("dash-poi-default"),
+                            Expression.stop("fuel", "dash-poi-fuel"),
+                            Expression.stop("food", "dash-poi-food"),
+                            Expression.stop("coffee", "dash-poi-coffee"),
+                            Expression.stop("shop", "dash-poi-shop"),
+                            Expression.stop("park", "dash-poi-park"),
+                            Expression.stop("health", "dash-poi-health"),
+                        ),
+                    ),
+                    PropertyFactory.textField(Expression.coalesce(Expression.get("name_en"), Expression.get("name"))),
+                    PropertyFactory.textFont(arrayOf("Noto Sans Regular")),
+                    PropertyFactory.textSize(11f),
+                    PropertyFactory.textOffset(arrayOf(0f, 1.1f)),
+                    PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
+                    PropertyFactory.textColor("#E8EDF5"),
+                    PropertyFactory.textHaloColor("#141923"),
+                    PropertyFactory.textHaloWidth(1.5f),
+                    PropertyFactory.textOptional(true),
+                )
+            }
+            if (s.getLayer(ALT_LINE) != null) s.addLayerBelow(layer, ALT_LINE) else s.addLayer(layer)
+            if (fuelOnlyShown == true) {
+                layer.setFilter(Expression.eq(Expression.get("group"), Expression.literal("fuel")))
+            }
+        }
+    }
+
+    fun drawCameras(cams: List<DashNav.RouteCam>) {
         val s = style ?: return
         if (cams === lastCams) return
         lastCams = cams
-        s.getSourceAs<GeoJsonSource>(CAM_SRC)?.setGeoJson(FeatureCollection.fromFeatures(cams.map { Feature.fromGeometry(Point.fromLngLat(it.lng, it.lat)) }))
+        s.getSourceAs<GeoJsonSource>(CAM_SRC)?.setGeoJson(
+            FeatureCollection.fromFeatures(
+                cams.map { c ->
+                    Feature.fromGeometry(Point.fromLngLat(c.loc.lng, c.loc.lat)).apply {
+                        addNumberProperty("red", if (c.redLight) 1 else 0)
+                    }
+                },
+            ),
+        )
     }
 
     private var lastTurnKey: String? = null
@@ -493,6 +631,27 @@ internal object DashMapHolder {
 
     private const val CAM_SRC = "dash-cams"
     private const val CAM_DOT = "dash-cams-dot"
+    private const val BUILDING_3D_LAYER = "dash-building-3d"
+    private const val PLACES_SRC = "dash-places-src"
+    private const val PLACES_LAYER = "dash-places-layer"
+    private val POI_COLORS = mapOf(
+        "fuel" to 0xFF26A69A.toInt(),
+        "food" to 0xFFFF7043.toInt(),
+        "coffee" to 0xFF8D6E63.toInt(),
+        "shop" to 0xFF42A5F5.toInt(),
+        "park" to 0xFF66BB6A.toInt(),
+        "health" to 0xFFEF5350.toInt(),
+        "default" to 0xFF78909C.toInt(),
+    )
+
+    private fun poiDotBitmap(color: Int): android.graphics.Bitmap {
+        val size = 24
+        val bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(bmp)
+        c.drawCircle(size / 2f, size / 2f, size / 2f - 2f, android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { this.color = 0xFFFFFFFF.toInt() })
+        c.drawCircle(size / 2f, size / 2f, size / 2f - 4.5f, android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { this.color = color })
+        return bmp
+    }
     private const val TRAFFIC_TILES_SRC = "dash-traffic-tiles"
     private const val TRAFFIC_TILES_LAYER = "dash-traffic-tiles-layer"
     // Vela's traffic tile template (VelaMapView.TRAFFIC_TILES).
@@ -524,14 +683,23 @@ internal fun DashMapView(modifier: Modifier, compact: Boolean) {
     val northUp by DashNav.northUp.collectAsState()
     val traffic by DashNav.trafficLayer.collectAsState()
     val cams by DashNav.cameras.collectAsState()
+    val buildings3d by DashNav.buildings3d.collectAsState()
+    val tilt3d by DashNav.tilt3d.collectAsState()
 
     AndroidView(modifier = modifier, factory = { c -> DashMapHolder.view(c, url) })
-    LaunchedEffect(traffic, nav.navigating, cams) {
+    LaunchedEffect(traffic, nav.navigating, cams, buildings3d) {
         DashMapHolder.showTraffic(traffic && !nav.navigating)
+        DashMapHolder.showBuildings3d(buildings3d)
+        DashMapHolder.setFuelOnly(nav.navigating)
         DashMapHolder.drawCameras(cams)
     }
+    LaunchedEffect(fix?.at?.lat?.let { (it * 5).toInt() }, fix?.at?.lng?.let { (it * 5).toInt() }, online, url) {
+        val at = fix?.at ?: return@LaunchedEffect
+        val uri = DashNav.placesOverlayUri(at)
+        DashMapHolder.setPlacesOverlay(uri)
+    }
 
-    LaunchedEffect(fix, nav.route, ui.routes, ui.chosen, ui.phase, ui.results, cam, northUp, compact) {
+    LaunchedEffect(fix, nav.route, ui.routes, ui.chosen, ui.phase, ui.results, cam, northUp, tilt3d, compact) {
         val m = DashMapHolder.map ?: return@LaunchedEffect
         val route = nav.route ?: ui.route
         val alts = if (!nav.navigating && ui.phase == DashNav.Phase.PREVIEW) ui.routes.filterIndexed { i, _ -> i != ui.chosen } else emptyList()
@@ -558,7 +726,7 @@ internal fun DashMapView(modifier: Modifier, compact: Boolean) {
                     CameraPosition.Builder()
                         .target(LatLng(f.at.lat, f.at.lng))
                         .zoom(if (compact) 15.5 else 16.5)
-                        .tilt(if (compact || northUp) 0.0 else 45.0)
+                        .tilt(if (compact || northUp || !tilt3d) 0.0 else 45.0)
                         .bearing(if (northUp) 0.0 else (f.bearing ?: 0f).toDouble())
                         .padding(0.0, if (compact) 0.0 else 160.0, 0.0, 0.0)
                         .build(),
@@ -567,7 +735,12 @@ internal fun DashMapView(modifier: Modifier, compact: Boolean) {
             )
             f != null -> m.animateCamera(
                 CameraUpdateFactory.newCameraPosition(
-                    CameraPosition.Builder().target(LatLng(f.at.lat, f.at.lng)).zoom(if (compact) 13.5 else 15.0).tilt(0.0).bearing(0.0).build(),
+                    CameraPosition.Builder()
+                        .target(LatLng(f.at.lat, f.at.lng))
+                        .zoom(if (compact) 13.5 else 15.0)
+                        .tilt(if (!compact && tilt3d && !northUp) 35.0 else 0.0)
+                        .bearing(0.0)
+                        .build(),
                 ),
                 700,
             )
@@ -593,7 +766,7 @@ internal fun DashMapScreen() {
             TypeSearch(onClose = { typing = false })
             return@Box
         }
-        MapButtons(Modifier.align(Alignment.CenterEnd).padding(10.dp), navigating = nav.navigating)
+        MapButtons(Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 10.dp), navigating = nav.navigating)
         if (nav.navigating && ui.phase == DashNav.Phase.RESULTS) {
             Results(Modifier.align(Alignment.TopStart).padding(10.dp).fillMaxHeight(), ui.query, ui.results)
         } else if (nav.navigating && ui.phase == DashNav.Phase.SEARCHING) {
@@ -623,10 +796,12 @@ private fun MapButtons(modifier: Modifier, navigating: Boolean) {
     val t = LocalDashTheme.current
     val cam by DashNav.camera.collectAsState()
     val northUp by DashNav.northUp.collectAsState()
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val tilt3d by DashNav.tilt3d.collectAsState()
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         RoundButton("+") { DashMapHolder.zoomBy(1.0) }
         RoundButton("−") { DashMapHolder.zoomBy(-1.0) }
         RoundButton(if (northUp) "N" else "⬆", highlight = northUp) { DashNav.northUp.value = !northUp }
+        RoundButton(if (tilt3d) "3D" else "2D", highlight = tilt3d) { DashNav.setTilt3d(!tilt3d) }
         val styleChoice by DashNav.mapStyle.collectAsState()
         RoundButton("🗺") {
             val order = listOf("auto", "liberty", "bright", "positron", "fiord", "dark", "satellite")
@@ -647,8 +822,8 @@ private fun MapButtons(modifier: Modifier, navigating: Boolean) {
 @Composable
 private fun RoundButton(label: String, highlight: Boolean = false, onTap: () -> Unit) {
     val t = LocalDashTheme.current
-    Tap(onTap = onTap, modifier = Modifier.size(52.dp), shape = CircleShape, color = if (highlight) t.accent else t.panel.copy(alpha = 0.92f)) {
-        Label(label, 20.sp, if (highlight) t.bgBottom else t.text, FontWeight.Bold)
+    Tap(onTap = onTap, modifier = Modifier.size(44.dp), shape = CircleShape, color = if (highlight) t.accent else t.panel.copy(alpha = 0.92f)) {
+        Label(label, 17.sp, if (highlight) t.bgBottom else t.text, FontWeight.Bold)
     }
 }
 
@@ -806,9 +981,10 @@ private fun Results(modifier: Modifier, query: String, places: List<Place>) {
     val fix by DashNav.fix.collectAsState()
     val ui by DashNav.state.collectAsState()
     var openNow by remember { mutableStateOf(false) }
+    var maxPrice by remember { mutableStateOf(0) } // 0 = any, 1..4 = $..$$$$
     var sort by remember { mutableStateOf(Sort.BEST) }
-    val shown = remember(places, openNow, sort, fix) {
-        places.filter { !openNow || it.openNow == true }.let { list ->
+    val shown = remember(places, openNow, maxPrice, sort, fix) {
+        places.filter { (!openNow || it.openNow == true) && (maxPrice == 0 || (it.priceLevel != null && it.priceLevel!! <= maxPrice)) }.let { list ->
             when (sort) {
                 Sort.BEST -> list
                 Sort.NEAREST -> fix?.let { f -> list.sortedBy { metersBetween(f.at, it.location) } } ?: list
@@ -830,6 +1006,7 @@ private fun Results(modifier: Modifier, query: String, places: List<Place>) {
             }
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Chip("Open now", openNow) { openNow = !openNow }
+                Chip(if (maxPrice == 0) "Price" else "≤ ${"$".repeat(maxPrice)}", maxPrice > 0) { maxPrice = (maxPrice + 1) % 5 }
                 if (!ui.alongRoute) Sort.entries.forEach { s -> Chip(s.label, sort == s) { sort = s } }
             }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -849,7 +1026,7 @@ private fun Results(modifier: Modifier, query: String, places: List<Place>) {
                                     ?: fix?.let { f -> miles(metersBetween(f.at, p.location)) }
                                 extra?.let { Label(it, 13.sp, if (p.detourSeconds != null) Color(0xFF34C759) else t.textDim, FontWeight.SemiBold) }
                             }
-                            Label(listOfNotNull(p.fuelPrice, p.rating?.let { "★ %.1f".format(it) }, p.statusText ?: p.category, p.address).joinToString(" · "), 12.sp, t.textDim)
+                            Label(listOfNotNull(p.fuelPrice, p.priceText ?: p.priceLevel?.takeIf { it > 0 }?.let { "$".repeat(it) }, p.rating?.let { "★ %.1f".format(it) }, p.statusText ?: p.category, p.address).joinToString(" · "), 12.sp, t.textDim)
                             if (ui.alongRoute) Label("Tap to add as a stop", 11.sp, t.accent)
                         }
                     }
@@ -939,10 +1116,12 @@ private fun Preview(modifier: Modifier) {
         if (options) {
             val tolls by DashNav.avoidTolls.collectAsState()
             val highways by DashNav.avoidHighways.collectAsState()
+            val ferries by DashNav.avoidFerries.collectAsState()
             Card(Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(Modifier.padding(8.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Chip("Avoid tolls", tolls) { DashNav.setAvoidTolls(!tolls) }
                     Chip("Avoid highways", highways) { DashNav.setAvoidHighways(!highways) }
+                    Chip("Avoid ferries", ferries) { DashNav.setAvoidFerries(!ferries) }
                     Chip("Steps", false) { steps = true }
                     Chip("↺ Round trip", false) { DashNav.roundTrip() }
                     Chip("💾 Save trip", false) { DashNav.saveTrip(); options = false }
@@ -952,17 +1131,41 @@ private fun Preview(modifier: Modifier) {
                 }
             }
         }
+        val noToll by DashNav.noTollRoute.collectAsState()
+        noToll?.let { free ->
+            val baseSec = ui.route?.let { it.durationInTrafficSeconds ?: it.durationSeconds } ?: 0.0
+            val freeSec = free.durationInTrafficSeconds ?: free.durationSeconds
+            val diff = ((freeSec - baseSec) / 60).roundToInt()
+            val delta = when {
+                diff > 0 -> "+$diff min"
+                diff < 0 -> "${-diff} min faster"
+                else -> "same time"
+            }
+            Card(Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Label("No-toll route: ${minutes(freeSec)} ($delta)", 13.sp, t.text, FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    Tap(onTap = DashNav::useNoTollRoute, modifier = Modifier.size(96.dp, 36.dp), color = t.accent) {
+                        Label("Use no-toll", 13.sp, t.bgBottom, FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
         if (ui.routes.size > 1) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ui.routes.forEachIndexed { i, r ->
+                    val tollTag = when (r.tolls) {
+                        app.vela.core.model.TollNote.MAY_HAVE_TOLLS -> " · Tolls"
+                        app.vela.core.model.TollNote.NO_TOLLS -> " · Free"
+                        null -> ""
+                    }
                     Tap(
                         onTap = { DashNav.choose(i) },
-                        modifier = Modifier.height(56.dp).width(130.dp),
+                        modifier = Modifier.height(56.dp).width(142.dp),
                         color = if (i == ui.chosen) t.accent else t.panel,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Label(minutes(r.durationInTrafficSeconds ?: r.durationSeconds), 15.sp, if (i == ui.chosen) t.bgBottom else t.text, FontWeight.Bold)
-                            Label(r.summary ?: miles(r.distanceMeters), 11.sp, if (i == ui.chosen) t.bgBottom else t.textDim)
+                            Label((r.summary ?: miles(r.distanceMeters)) + tollTag, 11.sp, if (i == ui.chosen) t.bgBottom else t.textDim)
                         }
                     }
                 }
@@ -1038,7 +1241,10 @@ private fun DriveScreen() {
                 when {
                     nav.paused -> Banner(Modifier.align(Alignment.TopCenter).padding(top = 10.dp), "⏸ Drive paused")
                     nav.nav.offRoute -> Banner(Modifier.align(Alignment.TopCenter).padding(top = 10.dp), "Rerouting…")
-                    camera -> Banner(Modifier.align(Alignment.TopCenter).padding(top = 10.dp), "📷 Speed camera ahead")
+                    camera != null -> Banner(
+                        Modifier.align(Alignment.TopCenter).padding(top = 10.dp),
+                        if (camera!!.redLight) "🚦 Red light camera ahead" else "📷 Speed camera ahead",
+                    )
                 }
                 nav.fasterRoute?.let { FasterRoute(Modifier.align(Alignment.TopEnd).padding(10.dp), nav.fasterSavingSeconds) }
             }
@@ -1063,11 +1269,11 @@ private fun RoadAhead(modifier: Modifier) {
     if (line.size < 2) return
     val traveled = nav.nav.traveledM
     val remaining = (route.distanceMeters - traveled).coerceAtLeast(1.0)
-    // Where along the route each camera sits (meters from the start).
+    // Where along the route each camera sits (meters from the start, plus red-light flag).
     val camAt = remember(route, cams) {
         val cum = DoubleArray(line.size)
         for (i in 1 until line.size) cum[i] = cum[i - 1] + metersBetween(line[i - 1], line[i])
-        cams.mapNotNull { c -> line.indices.minByOrNull { metersBetween(line[it], c) }?.let { cum[it] } }
+        cams.mapNotNull { c -> line.indices.minByOrNull { metersBetween(line[it], c.loc) }?.let { cum[it] to c.redLight } }
     }
     androidx.compose.foundation.Canvas(modifier.clip(RoundedCornerShape(5.dp))) {
         drawRect(Color(0xFF3D8BFF))
@@ -1083,8 +1289,12 @@ private fun RoadAhead(modifier: Modifier) {
                 size = androidx.compose.ui.geometry.Size((b - a).coerceAtLeast(2f), size.height),
             )
         }
-        camAt.filter { it > traveled }.forEach { m ->
-            drawRect(Color.White, topLeft = androidx.compose.ui.geometry.Offset(x(m) - 1.5f, 0f), size = androidx.compose.ui.geometry.Size(3f, size.height))
+        camAt.filter { it.first > traveled }.forEach { (m, red) ->
+            drawRect(
+                if (red) Color(0xFFFF5252) else Color.White,
+                topLeft = androidx.compose.ui.geometry.Offset(x(m) - 1.5f, 0f),
+                size = androidx.compose.ui.geometry.Size(3f, size.height),
+            )
         }
     }
 }
@@ -1181,13 +1391,28 @@ private fun TurnCard(modifier: Modifier) {
                 }
             }
         }
-        // "Then" when the turn after comes within ~a block.
-        if (then != null && step != null && step.distanceMeters < 300) {
-            Box(Modifier.padding(top = 4.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF0B3D26))) {
-                Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Label("Then", 13.sp, Color.White.copy(alpha = 0.8f))
-                    Spacer(Modifier.width(6.dp))
-                    Label(arrow(then.type), 18.sp, Color.White, FontWeight.Bold)
+        // "Then" when the turn after comes within ~a block, plus cross-street / traffic-light cue.
+        val currentStep = steps.getOrNull(nav.nav.stepIndex)
+        val onRoad = currentStep?.roadAt(nav.nav.traveledM)?.first?.takeIf { it.isNotBlank() && it != step?.road }
+        val lightAhead = step?.lightsBeforeM?.any { it < nav.nav.distanceToNextManeuver && it > 20.0 } == true
+        Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (then != null && step != null && step.distanceMeters < 300) {
+                Box(Modifier.clip(RoundedCornerShape(10.dp)).background(Color(0xFF0B3D26))) {
+                    Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Label("Then", 13.sp, Color.White.copy(alpha = 0.8f))
+                        Spacer(Modifier.width(6.dp))
+                        Label(arrow(then.type), 18.sp, Color.White, FontWeight.Bold)
+                    }
+                }
+            }
+            if (lightAhead) {
+                Box(Modifier.clip(RoundedCornerShape(10.dp)).background(Color(0xCC1B263B))) {
+                    Label("🚦 Past light", 12.sp, Color.White, FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp))
+                }
+            }
+            if (onRoad != null) {
+                Box(Modifier.clip(RoundedCornerShape(10.dp)).background(Color(0xCC000000))) {
+                    Label("On $onRoad", 12.sp, Color.White.copy(alpha = 0.9f), modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp))
                 }
             }
         }
@@ -1224,34 +1449,37 @@ private fun FasterRoute(modifier: Modifier, saving: Double) {
 }
 
 @Composable
-private fun SpeedBadge(modifier: Modifier, onlyMoving: Boolean = false) {
+internal fun SpeedBadge(modifier: Modifier, onlyMoving: Boolean = false, compact: Boolean = false) {
     val fix by DashNav.fix.collectAsState()
     val limit by DashNav.speedLimitMph.collectAsState()
     val speeding by DashNav.speeding.collectAsState()
-    val mph = ((fix?.speedMps ?: 0f) * 2.23694f).roundToInt()
-    if (onlyMoving && mph < 5) return
+    val imperial by DashNav.imperial.collectAsState()
+    val speed = ((fix?.speedMps ?: 0f) * if (imperial) 2.23694f else 3.6f).roundToInt()
+    if (onlyMoving && speed < if (imperial) 5 else 8) return
+    val circle = if (compact) 52.dp else 62.dp
+    val signW = if (compact) 42.dp else 48.dp
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(
-            Modifier.size(62.dp).clip(CircleShape).background(if (speeding) Color(0xFFE53935) else Color.White)
-                .border(3.dp, Color(0xFF222222), CircleShape),
+            Modifier.size(circle).clip(CircleShape).background(if (speeding) Color(0xFFE53935) else Color.White)
+                .border(if (compact) 2.5.dp else 3.dp, Color(0xFF222222), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Label("$mph", 22.sp, if (speeding) Color.White else Color.Black, FontWeight.Bold)
-                Label("mph", 10.sp, if (speeding) Color.White else Color(0xFF444444))
+                Label("$speed", if (compact) 18.sp else 22.sp, if (speeding) Color.White else Color.Black, FontWeight.Bold)
+                Label(if (imperial) "mph" else "km/h", if (compact) 9.sp else 10.sp, if (speeding) Color.White else Color(0xFF444444))
             }
         }
-        // The US speed limit sign, from the installed offline region.
+        // Posted speed limit sign (US rectangle in imperial, red-bordered in metric).
         limit?.let { l ->
             Box(
-                Modifier.size(48.dp, 62.dp).clip(RoundedCornerShape(6.dp)).background(Color.White)
-                    .border(2.dp, Color.Black, RoundedCornerShape(6.dp)),
+                Modifier.size(signW, circle).clip(RoundedCornerShape(6.dp)).background(Color.White)
+                    .border(2.dp, if (imperial) Color.Black else Color(0xFFE53935), RoundedCornerShape(6.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Label("SPEED", 8.sp, Color.Black, FontWeight.Bold)
-                    Label("LIMIT", 8.sp, Color.Black, FontWeight.Bold)
-                    Label("$l", 20.sp, Color.Black, FontWeight.Bold)
+                    Label("SPEED", if (compact) 7.sp else 8.sp, Color.Black, FontWeight.Bold)
+                    Label("LIMIT", if (compact) 7.sp else 8.sp, Color.Black, FontWeight.Bold)
+                    Label("$l", if (compact) 17.sp else 20.sp, Color.Black, FontWeight.Bold)
                 }
             }
         }
@@ -1368,6 +1596,14 @@ internal fun metersBetween(a: app.vela.core.model.LatLng, b: app.vela.core.model
 }
 
 internal fun miles(meters: Double): String {
+    if (!DashNav.imperial.value) {
+        val km = meters / 1000.0
+        return when {
+            meters < 300 -> "${(meters / 10).roundToInt() * 10} m"
+            km < 10 -> String.format(Locale.US, "%.1f km", km)
+            else -> "${km.roundToInt()} km"
+        }
+    }
     val mi = meters / 1609.344
     return when {
         mi < 0.1 -> "${(meters * 3.28084 / 10).roundToInt() * 10} ft"

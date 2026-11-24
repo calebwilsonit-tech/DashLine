@@ -68,6 +68,14 @@ object DirectionsVoice {
         start()
     }
 
+    @Volatile private var speechRate = 1.0f
+
+    /** Dashline: adjust how fast navigation directions are spoken (e.g. 0.85..1.3). */
+    fun setSpeechRate(rate: Float) {
+        speechRate = rate.coerceIn(0.7f, 1.5f)
+        runCatching { tts?.setSpeechRate(speechRate) }
+    }
+
     private fun start() {
         ttsReady = false
         ttsStartedAt = SystemClock.elapsedRealtime()
@@ -76,7 +84,10 @@ object DirectionsVoice {
             if (!ttsReady) GearslipLog.w("guidance: text-to-speech didn't start (status $status)")
             // The turns are worded in Gearslip's language; the engine's default voice may be
             // another one, and read German words with an English voice (issue #70).
-            else speakIn(appContext?.resources?.configuration?.locales?.get(0))
+            else {
+                speakIn(appContext?.resources?.configuration?.locales?.get(0))
+                runCatching { tts?.setSpeechRate(speechRate) }
+            }
         }.apply {
             setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {}
