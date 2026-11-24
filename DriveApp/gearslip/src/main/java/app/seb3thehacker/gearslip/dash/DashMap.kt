@@ -113,6 +113,11 @@ internal object DashMapHolder {
         this.dark = dark
         m.setStyle(Style.Builder().fromUri(if (dark) DARK_STYLE else LIGHT_STYLE)) { s ->
             style = s
+            // Google's live traffic, as Vela draws it while browsing (hidden during a drive: the
+            // route line carries the traffic then).
+            s.addSource(org.maplibre.android.style.sources.RasterSource(TRAFFIC_TILES_SRC, org.maplibre.android.style.sources.TileSet("2.2.0", TRAFFIC_TILES).apply { maxZoom = 16f }, 256))
+            s.addLayer(org.maplibre.android.style.layers.RasterLayer(TRAFFIC_TILES_LAYER, TRAFFIC_TILES_SRC).withProperties(PropertyFactory.rasterOpacity(0.9f)))
+            trafficShown = null
             s.addSource(GeoJsonSource(ALT_SRC))
             s.addLayer(
                 LineLayer(ALT_LINE, ALT_SRC).withProperties(
@@ -173,6 +178,16 @@ internal object DashMapHolder {
                     PropertyFactory.circleStrokeWidth(3f),
                 ),
             )
+            s.addSource(GeoJsonSource(CAM_SRC))
+            s.addLayer(
+                CircleLayer(CAM_DOT, CAM_SRC).withProperties(
+                    PropertyFactory.circleRadius(7f),
+                    PropertyFactory.circleColor("#FF9800"),
+                    PropertyFactory.circleStrokeColor("#000000"),
+                    PropertyFactory.circleStrokeWidth(2f),
+                ),
+            )
+            lastCams = null
             s.addSource(GeoJsonSource(PIN_SRC))
             s.addLayer(
                 CircleLayer(PIN_DOT, PIN_SRC).withProperties(
@@ -240,6 +255,23 @@ internal object DashMapHolder {
         return FeatureCollection.fromFeatures(out)
     }
 
+    private var trafficShown: Boolean? = null
+    private var lastCams: List<app.vela.core.model.LatLng>? = null
+
+    fun showTraffic(on: Boolean) {
+        val s = style ?: return
+        if (trafficShown == on) return
+        trafficShown = on
+        s.getLayer(TRAFFIC_TILES_LAYER)?.setProperties(PropertyFactory.visibility(if (on) Property.VISIBLE else Property.NONE))
+    }
+
+    fun drawCameras(cams: List<app.vela.core.model.LatLng>) {
+        val s = style ?: return
+        if (cams === lastCams) return
+        lastCams = cams
+        s.getSourceAs<GeoJsonSource>(CAM_SRC)?.setGeoJson(FeatureCollection.fromFeatures(cams.map { Feature.fromGeometry(Point.fromLngLat(it.lng, it.lat)) }))
+    }
+
     fun zoomBy(delta: Double) {
         DashNav.camera.value = DashNav.Camera.FREE
         map?.animateCamera(CameraUpdateFactory.zoomBy(delta), 250)
@@ -255,6 +287,14 @@ internal object DashMapHolder {
     private const val ME_SRC = "dash-me"
     private const val ME_DOT = "dash-me-dot"
     private const val ME_HALO = "dash-me-halo"
+    private const val CAM_SRC = "dash-cams"
+    private const val CAM_DOT = "dash-cams-dot"
+    private const val TRAFFIC_TILES_SRC = "dash-traffic-tiles"
+    private const val TRAFFIC_TILES_LAYER = "dash-traffic-tiles-layer"
+    // Vela's traffic tile template (VelaMapView.TRAFFIC_TILES).
+    private const val TRAFFIC_TILES =
+        "https://www.google.com/maps/vt/pb=!1m4!1m3!1i{z}!2i{x}!3i{y}!2m9!1e2!2straffic!3i999999" +
+            "!4m2!1sincidents!2s1!4m2!1sincidents_text!2s1!3m8!2sen!3sus!5e1105!12m4!1e68!2m2!1sset!2sRoadmap!4e0!5m1!1e0"
     private const val PIN_SRC = "dash-pins"
     private const val PIN_DOT = "dash-pins-dot"
     private const val LIGHT_STYLE = "https://tiles.openfreemap.org/styles/liberty"
@@ -273,8 +313,14 @@ internal fun DashMapView(modifier: Modifier, compact: Boolean) {
     val ui by DashNav.state.collectAsState()
     val cam by DashNav.camera.collectAsState()
     val northUp by DashNav.northUp.collectAsState()
+    val traffic by DashNav.trafficLayer.collectAsState()
+    val cams by DashNav.cameras.collectAsState()
 
     AndroidView(modifier = modifier, factory = { c -> DashMapHolder.view(c, dark) })
+    LaunchedEffect(traffic, nav.navigating, cams) {
+        DashMapHolder.showTraffic(traffic && !nav.navigating)
+        DashMapHolder.drawCameras(cams)
+    }
 
     LaunchedEffect(fix, nav.route, ui.routes, ui.chosen, ui.phase, ui.results, cam, northUp, compact) {
         val m = DashMapHolder.map ?: return@LaunchedEffect
@@ -338,7 +384,11 @@ internal fun DashMapScreen() {
             return@Box
         }
         MapButtons(Modifier.align(Alignment.CenterEnd).padding(10.dp), navigating = nav.navigating)
-        if (nav.navigating) {
+        if (nav.navigating && ui.phase == DashNav.Phase.RESULTS) {
+            Results(Modifier.align(Alignment.TopStart).padding(10.dp).fillMaxHeight(), ui.query, ui.results)
+        } else if (nav.navigating && ui.phase == DashNav.Phase.SEARCHING) {
+            Status(Modifier.align(Alignment.TopStart).padding(10.dp), "Looking for \"${ui.query}\" along the route…")
+        } else if (nav.navigating) {
             DriveScreen()
         } else {
             when (ui.phase) {
@@ -364,6 +414,10 @@ private fun MapButtons(modifier: Modifier, navigating: Boolean) {
         RoundButton("+") { DashMapHolder.zoomBy(1.0) }
         RoundButton("−") { DashMapHolder.zoomBy(-1.0) }
         RoundButton(if (northUp) "N" else "⬆", highlight = northUp) { DashNav.northUp.value = !northUp }
+        if (!navigating) {
+            val traffic by DashNav.trafficLayer.collectAsState()
+            RoundButton("🚦", highlight = traffic) { DashNav.setTrafficLayer(!traffic) }
+        }
         if (cam != DashNav.Camera.FOLLOW) {
             RoundButton("◎", highlight = true) { DashNav.camera.value = DashNav.Camera.FOLLOW }
         } else if (navigating) {
@@ -510,29 +564,79 @@ private fun Status(modifier: Modifier, text: String) {
     Card(modifier.width(320.dp)) { Label(text, 16.sp, maxLines = 2, modifier = Modifier.padding(14.dp)) }
 }
 
+private enum class Sort(val label: String) { BEST("Best"), NEAREST("Nearest"), RATING("Top rated") }
+
 @Composable
 private fun Results(modifier: Modifier, query: String, places: List<Place>) {
     val t = LocalDashTheme.current
     val fix by DashNav.fix.collectAsState()
-    Card(modifier.width(330.dp)) {
-        Column(Modifier.padding(8.dp)) {
+    val ui by DashNav.state.collectAsState()
+    var openNow by remember { mutableStateOf(false) }
+    var sort by remember { mutableStateOf(Sort.BEST) }
+    val shown = remember(places, openNow, sort, fix) {
+        places.filter { !openNow || it.openNow == true }.let { list ->
+            when (sort) {
+                Sort.BEST -> list
+                Sort.NEAREST -> fix?.let { f -> list.sortedBy { metersBetween(f.at, it.location) } } ?: list
+                Sort.RATING -> list.sortedByDescending { it.rating ?: 0.0 }
+            }
+        }
+    }
+    Card(modifier.width(360.dp)) {
+        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Label("\"$query\"", 15.sp, t.accent, FontWeight.SemiBold, modifier = Modifier.padding(6.dp).weight(1f))
-                Tap(onTap = DashNav::clear, modifier = Modifier.size(70.dp, 34.dp), color = t.panelHi) { Label("Back", 13.sp) }
+                Label(if (ui.alongRoute) "\"$query\" along the route" else "\"$query\"", 15.sp, t.accent, FontWeight.SemiBold, modifier = Modifier.padding(6.dp).weight(1f))
+                Tap(onTap = DashNav::closeResults, modifier = Modifier.size(70.dp, 34.dp), color = t.panelHi) { Label("Back", 13.sp) }
+            }
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Chip("Open now", openNow) { openNow = !openNow }
+                if (!ui.alongRoute) Sort.entries.forEach { s -> Chip(s.label, sort == s) { sort = s } }
             }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(places.size) { i ->
-                    val p = places[i]
-                    Tap(onTap = { DashNav.preview(p) }, onTapUp = true, modifier = Modifier.fillMaxWidth().height(62.dp), color = t.panelHi, contentAlignment = Alignment.CenterStart) {
+                items(shown.size) { i ->
+                    val p = shown[i]
+                    Tap(
+                        onTap = { if (ui.alongRoute) DashNav.addStop(p) else DashNav.preview(p) },
+                        onTapUp = true,
+                        modifier = Modifier.fillMaxWidth().height(66.dp),
+                        color = t.panelHi,
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
                         Column(Modifier.padding(horizontal = 10.dp)) {
-                            Row {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Label(p.name, 15.sp, weight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                                fix?.let { f -> Label(miles(metersBetween(f.at, p.location)), 13.sp, t.textDim) }
+                                val extra = p.detourSeconds?.let { if (it < 30) "On the way" else "+${minutes(it.toDouble())}" }
+                                    ?: fix?.let { f -> miles(metersBetween(f.at, p.location)) }
+                                extra?.let { Label(it, 13.sp, if (p.detourSeconds != null) Color(0xFF34C759) else t.textDim, FontWeight.SemiBold) }
                             }
-                            Label(listOfNotNull(p.rating?.let { "★ %.1f".format(it) }, p.category, p.address).joinToString(" · "), 12.sp, t.textDim)
+                            Label(listOfNotNull(p.fuelPrice, p.rating?.let { "★ %.1f".format(it) }, p.statusText ?: p.category, p.address).joinToString(" · "), 12.sp, t.textDim)
+                            if (ui.alongRoute) Label("Tap to add as a stop", 11.sp, t.accent)
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Chip(label: String, on: Boolean, onTap: () -> Unit) {
+    val t = LocalDashTheme.current
+    Tap(onTap = onTap, onTapUp = true, modifier = Modifier.height(34.dp), shape = RoundedCornerShape(17.dp), color = if (on) t.accent else t.panelHi) {
+        Label(label, 13.sp, if (on) t.bgBottom else t.text, modifier = Modifier.padding(horizontal = 12.dp))
+    }
+}
+
+/** Gas, food... searched along the route (the drive's + Stop, or a preview's add-stop). */
+@Composable
+private fun AlongRouteChips(modifier: Modifier, onDone: () -> Unit) {
+    val t = LocalDashTheme.current
+    Card(modifier) {
+        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Label("Add a stop along the route", 14.sp, t.accent, FontWeight.SemiBold, modifier = Modifier.padding(4.dp))
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                for ((label, query) in CATEGORIES) Chip(label, false) { onDone(); DashNav.searchAlongRoute(query) }
+                Chip("Close", false) { onDone() }
             }
         }
     }
@@ -545,7 +649,53 @@ private fun Preview(modifier: Modifier) {
     val ui by DashNav.state.collectAsState()
     val dest = ui.destination ?: return
     var saving by remember { mutableStateOf(false) }
+    var addingStop by remember { mutableStateOf(false) }
+    var options by remember { mutableStateOf(false) }
+    var steps by remember { mutableStateOf(false) }
+    val context = LocalContext.current.applicationContext
+    if (steps) {
+        StepList(Modifier.fillMaxHeight(), ui.route?.maneuvers.orEmpty(), from = 0) { steps = false }
+        return
+    }
     Column(modifier.fillMaxWidth(0.88f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // The place: open now, today's hours, gas price, phone.
+        val d = ui.details
+        if (d != null && (d.statusText != null || d.phone != null || d.fuelPrice != null)) {
+            Card(Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        d.statusText?.let { Label(it, 14.sp, if (d.openNow == false) Color(0xFFFF6B6B) else Color(0xFF34C759), FontWeight.SemiBold) }
+                        Label(listOfNotNull(d.fuelPrice, d.rating?.let { "★ %.1f (${d.reviewCount ?: 0})".format(it) }, d.category).joinToString(" · "), 13.sp, t.textDim)
+                    }
+                    d.phone?.let { phone ->
+                        Tap(onTap = { app.seb3thehacker.gearslip.car.placeCall(context, phone) }, modifier = Modifier.size(90.dp, 44.dp), color = Color(0xFF1E9E4A)) {
+                            Label("Call", 15.sp, Color.White, FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
+        }
+        if (ui.stops.isNotEmpty()) {
+            Card(Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(8.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Label("Stops:", 13.sp, t.textDim)
+                    ui.stops.forEach { stop -> Chip("${stop.name}  ✕", true) { DashNav.removeStop(stop) } }
+                }
+            }
+        }
+        if (addingStop) AlongRouteChips(Modifier.fillMaxWidth()) { addingStop = false }
+        if (options) {
+            val tolls by DashNav.avoidTolls.collectAsState()
+            val highways by DashNav.avoidHighways.collectAsState()
+            Card(Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Chip("Avoid tolls", tolls) { DashNav.setAvoidTolls(!tolls) }
+                    Chip("Avoid highways", highways) { DashNav.setAvoidHighways(!highways) }
+                    Chip("Steps", false) { steps = true }
+                    Chip("Close", false) { options = false }
+                }
+            }
+        }
         if (ui.routes.size > 1) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ui.routes.forEachIndexed { i, r ->
@@ -580,9 +730,13 @@ private fun Preview(modifier: Modifier) {
                     Label(dest.name, 17.sp, weight = FontWeight.SemiBold)
                     Label("${minutes(r.durationInTrafficSeconds ?: r.durationSeconds)} · ${miles(r.distanceMeters)} · arrive ${arrival(r.durationInTrafficSeconds ?: r.durationSeconds)}", 14.sp, t.accent)
                 }
-                Tap(onTap = { saving = !saving }, modifier = Modifier.size(56.dp, 52.dp), color = t.panelHi) { Label("★", 20.sp, t.accent) }
+                Tap(onTap = { saving = !saving }, modifier = Modifier.size(48.dp, 52.dp), color = t.panelHi) { Label("★", 20.sp, t.accent) }
+                Spacer(Modifier.width(6.dp))
+                Tap(onTap = { addingStop = !addingStop }, modifier = Modifier.size(48.dp, 52.dp), color = t.panelHi) { Label("+", 22.sp, t.accent, FontWeight.Bold) }
+                Spacer(Modifier.width(6.dp))
+                Tap(onTap = { options = !options }, modifier = Modifier.size(48.dp, 52.dp), color = t.panelHi) { Label("⚙", 18.sp, t.accent) }
                 Spacer(Modifier.width(8.dp))
-                Tap(onTap = DashNav::clear, modifier = Modifier.size(84.dp, 52.dp), color = t.panelHi) { Label("Cancel", 15.sp) }
+                Tap(onTap = DashNav::clear, modifier = Modifier.size(74.dp, 52.dp), color = t.panelHi) { Label("Cancel", 14.sp) }
                 Spacer(Modifier.width(8.dp))
                 Tap(onTap = DashNav::go, modifier = Modifier.size(100.dp, 52.dp), color = Color(0xFF1E9E4A)) {
                     Label("Go", 18.sp, Color.White, FontWeight.Bold)
@@ -614,17 +768,55 @@ private fun nameAndSave(p: Place) {
 @Composable
 private fun DriveScreen() {
     val nav by DashNav.session.state.collectAsState()
+    val camera by DashNav.cameraAhead.collectAsState()
+    var steps by remember { mutableStateOf(false) }
+    var addingStop by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxSize()) {
         when {
             nav.arrived -> ArrivedCard(Modifier.align(Alignment.Center))
+            steps -> StepList(Modifier.align(Alignment.TopStart).padding(10.dp).fillMaxHeight(0.82f), nav.route?.maneuvers.orEmpty(), from = nav.nav.stepIndex + 1) { steps = false }
             else -> {
-                TurnCard(Modifier.align(Alignment.TopStart).padding(10.dp))
-                if (nav.nav.offRoute) Banner(Modifier.align(Alignment.TopCenter).padding(top = 10.dp), "Rerouting…")
+                Tap(onTap = { steps = true }, onTapUp = true, modifier = Modifier.align(Alignment.TopStart).padding(10.dp), color = Color.Transparent, outline = false) {
+                    TurnCard(Modifier)
+                }
+                when {
+                    nav.nav.offRoute -> Banner(Modifier.align(Alignment.TopCenter).padding(top = 10.dp), "Rerouting…")
+                    camera -> Banner(Modifier.align(Alignment.TopCenter).padding(top = 10.dp), "📷 Speed camera ahead")
+                }
                 nav.fasterRoute?.let { FasterRoute(Modifier.align(Alignment.TopEnd).padding(10.dp), nav.fasterSavingSeconds) }
             }
         }
+        if (addingStop) AlongRouteChips(Modifier.align(Alignment.BottomCenter).padding(start = 10.dp, end = 10.dp, bottom = 80.dp).fillMaxWidth()) { addingStop = false }
         SpeedBadge(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, bottom = 84.dp))
-        TripBar(Modifier.align(Alignment.BottomCenter).padding(10.dp))
+        TripBar(Modifier.align(Alignment.BottomCenter).padding(10.dp), onAddStop = { addingStop = !addingStop })
+    }
+}
+
+/** The turns of the route from [from] on: road, distance, and the maneuver. */
+@Composable
+private fun StepList(modifier: Modifier, steps: List<app.vela.core.model.Maneuver>, from: Int, onClose: () -> Unit) {
+    val t = LocalDashTheme.current
+    Card(modifier.width(380.dp)) {
+        Column(Modifier.padding(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Label("Turns", 15.sp, t.accent, FontWeight.SemiBold, modifier = Modifier.padding(6.dp).weight(1f))
+                Tap(onTap = onClose, modifier = Modifier.size(70.dp, 34.dp), color = t.panelHi) { Label("Close", 13.sp) }
+            }
+            val rest = steps.drop(from.coerceAtLeast(0))
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                items(rest.size) { i ->
+                    val m = rest[i]
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(t.panelHi).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Label(arrow(m.type), 22.sp, t.accent, FontWeight.Bold, modifier = Modifier.width(34.dp))
+                        Column(Modifier.weight(1f)) {
+                            Label(m.instruction, 14.sp, maxLines = 2)
+                            m.ref?.let { Label(it, 11.sp, t.textDim) }
+                        }
+                        Label(miles(m.distanceMeters), 12.sp, t.textDim)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -719,10 +911,11 @@ private fun SpeedBadge(modifier: Modifier) {
 }
 
 @Composable
-private fun TripBar(modifier: Modifier) {
+private fun TripBar(modifier: Modifier, onAddStop: () -> Unit) {
     val t = LocalDashTheme.current
     val nav by DashNav.session.state.collectAsState()
     val voiceOn by DashNav.voiceOn.collectAsState()
+    val detail by DashNav.voiceDetail.collectAsState()
     Card(modifier.fillMaxWidth().height(64.dp)) {
         Row(Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Label(minutes(nav.remainingDuration), 20.sp, Color(0xFF34C759), FontWeight.Bold)
@@ -731,7 +924,21 @@ private fun TripBar(modifier: Modifier) {
                 Label("${miles(nav.remainingDistance)} · arrive ${arrival(nav.remainingDuration)}", 15.sp, t.textDim)
                 if (nav.destinationLabel.isNotBlank()) Label(nav.destinationLabel, 12.sp, t.textDim)
             }
-            Tap(onTap = { DashNav.voiceOn.value = !voiceOn }, modifier = Modifier.size(56.dp, 46.dp), color = if (voiceOn) t.panelHi else Color(0xFF8B1A1A)) {
+            Tap(onTap = onAddStop, modifier = Modifier.size(70.dp, 46.dp), color = t.panelHi) { Label("+ Stop", 13.sp) }
+            Spacer(Modifier.width(6.dp))
+            // How much the voice says: everything, brief, or highway exits only.
+            Tap(
+                onTap = {
+                    val modes = app.vela.core.nav.SpokenDetail.Mode.entries
+                    DashNav.setVoiceDetail(modes[(detail.ordinal + 1) % modes.size])
+                },
+                modifier = Modifier.size(66.dp, 46.dp),
+                color = t.panelHi,
+            ) {
+                Label(when (detail) { app.vela.core.nav.SpokenDetail.Mode.FULL -> "Full"; app.vela.core.nav.SpokenDetail.Mode.BRIEF -> "Brief"; else -> "Exits" }, 13.sp)
+            }
+            Spacer(Modifier.width(6.dp))
+            Tap(onTap = { DashNav.voiceOn.value = !voiceOn }, modifier = Modifier.size(52.dp, 46.dp), color = if (voiceOn) t.panelHi else Color(0xFF8B1A1A)) {
                 Label(if (voiceOn) "🔊" else "🔇", 18.sp)
             }
             Spacer(Modifier.width(8.dp))

@@ -67,6 +67,12 @@ object DashNav {
         val routes: List<Route> = emptyList(),
         val chosen: Int = 0,
         val error: String = "",
+        /** Stops on the way, in order (waypoints before Go; added to the drive after). */
+        val stops: List<Place> = emptyList(),
+        /** The destination's full listing: hours, open now, phone, gas price. */
+        val details: Place? = null,
+        /** These results came from a search along the route, priced in added minutes. */
+        val alongRoute: Boolean = false,
     ) {
         val route: Route? get() = routes.getOrNull(chosen)
     }
@@ -94,6 +100,23 @@ object DashNav {
     val northUp = MutableStateFlow(false)
     /** Spoken turns on or off. */
     val voiceOn = MutableStateFlow(true)
+    /** Route options (Vela's RoutingPrefs), remembered. */
+    val avoidTolls = MutableStateFlow(false)
+    val avoidHighways = MutableStateFlow(false)
+    /** How much the voice says (Vela's SpokenDetail): everything, brief, or highway exits only. */
+    val voiceDetail = MutableStateFlow(app.vela.core.nav.SpokenDetail.Mode.FULL)
+    /** Google's live traffic drawn on the map while browsing. */
+    val trafficLayer = MutableStateFlow(true)
+    /** Speed cameras along the route, and the one being warned about. */
+    val cameras = MutableStateFlow<List<LatLng>>(emptyList())
+    val cameraAhead = MutableStateFlow(false)
+
+    private var prefs: android.content.SharedPreferences? = null
+
+    fun setAvoidTolls(on: Boolean) { avoidTolls.value = on; app.vela.core.data.RoutingPrefs.avoidTolls = on; prefs?.edit()?.putBoolean("avoidTolls", on)?.apply(); reroutePreview() }
+    fun setAvoidHighways(on: Boolean) { avoidHighways.value = on; app.vela.core.data.RoutingPrefs.avoidHighways = on; prefs?.edit()?.putBoolean("avoidHighways", on)?.apply(); reroutePreview() }
+    fun setVoiceDetail(m: app.vela.core.nav.SpokenDetail.Mode) { voiceDetail.value = m; app.vela.core.nav.SpokenDetail.mode = m; prefs?.edit()?.putString("voiceDetail", m.name)?.apply() }
+    fun setTrafficLayer(on: Boolean) { trafficLayer.value = on; prefs?.edit()?.putBoolean("traffic", on)?.apply() }
 
     private lateinit var http: OkHttpClient
     private lateinit var source: GoogleMapsDataSource
@@ -106,6 +129,16 @@ object DashNav {
         if (ready) return
         val c = context.applicationContext
         DashPlaces.init(c)
+        prefs = c.getSharedPreferences("dashline_nav", Context.MODE_PRIVATE).also { p ->
+            avoidTolls.value = p.getBoolean("avoidTolls", false)
+            avoidHighways.value = p.getBoolean("avoidHighways", false)
+            trafficLayer.value = p.getBoolean("traffic", true)
+            voiceDetail.value = runCatching { app.vela.core.nav.SpokenDetail.Mode.valueOf(p.getString("voiceDetail", "FULL")!!) }
+                .getOrDefault(app.vela.core.nav.SpokenDetail.Mode.FULL)
+        }
+        app.vela.core.data.RoutingPrefs.avoidTolls = avoidTolls.value
+        app.vela.core.data.RoutingPrefs.avoidHighways = avoidHighways.value
+        app.vela.core.nav.SpokenDetail.mode = voiceDetail.value
         http = CoreModule.okHttpClient()
         calibration = CalibrationStore(c, http)
         val diag = DiagLog(c)
@@ -164,6 +197,7 @@ object DashNav {
         val at = LatLng(loc.latitude, loc.longitude)
         _fix.value = Fix(at, if (loc.hasBearing()) loc.bearing else null, if (loc.hasSpeed()) loc.speed else null)
         if (::session.isInitialized && session.state.value.navigating) {
+            checkCameras(at, if (loc.hasSpeed()) loc.speed.toDouble() else 0.0)
             session.onLocation(
                 at,
                 imperial = true,
@@ -264,10 +298,21 @@ object DashNav {
             return
         }
         DashPlaces.addRecent(place)
-        _state.value = _state.value.copy(phase = Phase.ROUTING, destination = place, routes = emptyList(), chosen = 0)
+        val keepStops = if (_state.value.destination?.location == place.location) _state.value.stops else emptyList()
+        _state.value = _state.value.copy(phase = Phase.ROUTING, destination = place, routes = emptyList(), chosen = 0, stops = keepStops, details = null, alongRoute = false)
         camera.value = Camera.OVERVIEW
+        loadDetails(place)
         scope.launch {
-            runCatching { withContext(Dispatchers.IO) { source.directions(from, place.location) } }
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    source.directions(
+                        from, place.location,
+                        waypoints = keepStops.map { it.location },
+                        avoidTolls = avoidTolls.value,
+                        avoidHighways = avoidHighways.value,
+                    )
+                }
+            }
                 .onSuccess { routes ->
                     _state.value = if (routes.isEmpty()) _state.value.copy(phase = Phase.ERROR, error = "No route found")
                     else _state.value.copy(phase = Phase.PREVIEW, routes = routes.take(4), chosen = 0)
@@ -276,6 +321,123 @@ object DashNav {
                     GearslipLog.w("nav: directions failed: ${it.javaClass.simpleName}")
                     _state.value = _state.value.copy(phase = Phase.ERROR, error = "Couldn't get directions")
                 }
+        }
+    }
+
+    /** Hours, open now, phone and gas price for [place], filled in when Google answers. */
+    private fun loadDetails(place: Place) {
+        // A search result already carries status, hours, phone and gas price (as in Vela).
+        if (_state.value.destination?.id == place.id) _state.value = _state.value.copy(details = place)
+        if (place.phone != null && place.statusText != null) return
+        // Missing pieces: Vela's focused "name address" search, nearest match.
+        scope.launch {
+            val q = listOfNotNull(place.name, place.address).joinToString(" ")
+            val hit = runCatching { withContext(Dispatchers.IO) { source.searchOnce(q, place.location) } }.getOrNull()
+                ?.filter { metersBetween(it.location, place.location) < 150 }
+                ?.minByOrNull { metersBetween(it.location, place.location) } ?: return@launch
+            val merged = place.copy(
+                phone = place.phone ?: hit.phone,
+                statusText = place.statusText ?: hit.statusText,
+                openNow = place.openNow ?: hit.openNow,
+                hours = place.hours.ifEmpty { hit.hours },
+                fuelPrice = place.fuelPrice ?: hit.fuelPrice,
+                rating = place.rating ?: hit.rating,
+                reviewCount = place.reviewCount ?: hit.reviewCount,
+                website = place.website ?: hit.website,
+            )
+            if (_state.value.destination?.location == place.location) _state.value = _state.value.copy(details = merged)
+        }
+    }
+
+    /** Opens a result's card (hours, phone) without routing yet. */
+    fun details(place: Place) = loadDetails(place)
+
+    private fun reroutePreview() {
+        val s = _state.value
+        if (s.phase == Phase.PREVIEW) s.destination?.let(::preview)
+    }
+
+    /** Adds [place] as a stop: a waypoint before Go, or into the running drive. */
+    fun addStop(place: Place) {
+        val s = _state.value
+        if (session.state.value.navigating) {
+            val here = _fix.value?.at ?: return
+            session.addStop(NavSession.NavStop(place.location, place.name), here, atEnd = false)
+            _state.value = s.copy(phase = Phase.NAVIGATING, results = emptyList(), alongRoute = false)
+            GearslipLog.i("nav: stop added to the drive")
+            return
+        }
+        val dest = s.destination ?: return
+        _state.value = s.copy(stops = s.stops + place)
+        preview(dest)
+    }
+
+    fun removeStop(place: Place) {
+        val s = _state.value
+        val dest = s.destination ?: return
+        _state.value = s.copy(stops = s.stops - place)
+        preview(dest)
+    }
+
+    /**
+     * "Gas" while driving: searched around points on the road ahead, kept to the places near
+     * the route, and priced with the minutes each adds to the trip (Vela's corridor search and
+     * detour pricing), least detour first.
+     */
+    fun searchAlongRoute(query: String) {
+        val route = session.state.value.route ?: _state.value.route ?: return search(query)
+        val prior = _state.value
+        _state.value = prior.copy(phase = Phase.SEARCHING, query = query)
+        scope.launch {
+            val priced = runCatching {
+                withContext(Dispatchers.IO) {
+                    val ahead = app.vela.core.data.RouteCorridor.ahead(route.polyline, session.state.value.nav.traveledM)
+                    val centers = app.vela.core.data.RouteCorridor.searchCenters(ahead).take(4)
+                    val found = centers.flatMap { c -> runCatching { source.search(query, near = c, spanMeters = 8_000.0).places }.getOrDefault(emptyList()) }
+                    val near = app.vela.core.data.RouteCorridor.alongRoute(dedupe(found), ahead, 3_000.0).take(10)
+                    source.detourAlongRoute(ahead, near) ?: near
+                }
+            }.getOrDefault(emptyList())
+            _state.value = if (priced.isEmpty()) prior.copy(phase = if (session.state.value.navigating) Phase.NAVIGATING else prior.phase, error = "No \"$query\" along the route")
+            else prior.copy(phase = Phase.RESULTS, query = query, results = priced, alongRoute = true)
+        }
+    }
+
+    /** Back from along-route results to the drive or the preview. */
+    fun closeResults() {
+        val s = _state.value
+        _state.value = when {
+            session.state.value.navigating -> s.copy(phase = Phase.NAVIGATING, results = emptyList(), alongRoute = false)
+            s.alongRoute && s.route != null -> s.copy(phase = Phase.PREVIEW, results = emptyList(), alongRoute = false)
+            else -> State()
+        }
+    }
+
+    // --- speed cameras -----------------------------------------------------------------------
+
+    private val announced = mutableSetOf<String>()
+
+    private fun loadCameras(route: Route) {
+        cameras.value = emptyList()
+        announced.clear()
+        scope.launch {
+            val found = runCatching {
+                withContext(Dispatchers.IO) { app.vela.core.data.OverpassSpeedCameras.fetchAlongCorridor(http, route.polyline) }
+            }.getOrNull().orEmpty()
+            cameras.value = found.map { it.loc }
+            if (found.isNotEmpty()) GearslipLog.i("nav: ${found.size} speed cameras along the route")
+        }
+    }
+
+    private fun checkCameras(at: LatLng, speedMps: Double) {
+        val list = cameras.value
+        if (list.isEmpty()) { cameraAhead.value = false; return }
+        val lead = app.vela.core.nav.CameraAlerts.leadDistanceM(speedMps.coerceAtLeast(8.0))
+        val close = list.firstOrNull { metersBetween(it, at) < lead }
+        cameraAhead.value = close != null
+        if (close != null) {
+            val key = "${close.lat},${close.lng}"
+            if (announced.add(key) && voiceOn.value) DirectionsVoice.speak("Speed camera ahead")
         }
     }
 
@@ -292,10 +454,12 @@ object DashNav {
             route,
             dest.location,
             destinationLabel = dest.name,
+            stops = s.stops.map { NavSession.NavStop(it.location, it.name) },
             destinationAddress = dest.address.orEmpty(),
             from = _fix.value?.at,
             fromCourseDeg = _fix.value?.bearing?.toDouble(),
         )
+        loadCameras(route)
         _state.value = s.copy(phase = Phase.NAVIGATING)
         camera.value = Camera.FOLLOW
         GearslipLog.i("nav: navigation started")
@@ -328,6 +492,8 @@ object DashNav {
 
     fun stop() {
         if (::session.isInitialized) session.stop()
+        cameras.value = emptyList()
+        cameraAhead.value = false
         _state.value = State()
         camera.value = Camera.FOLLOW
         GearslipLog.i("nav: navigation ended")

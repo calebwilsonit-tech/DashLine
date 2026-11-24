@@ -78,6 +78,15 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **0.3.0: maps Phase 2** (see `MAPS_PARITY.md`). `DashNav`: `searchAlongRoute` (Vela `RouteCorridor.ahead`/`searchCenters`,
+  then search per center, `RouteCorridor.alongRoute`, then `detourAlongRoute` for `Place.detourSeconds`); a result tapped there becomes a stop
+  (`NavSession.addStop` mid-drive, waypoints before Go); `loadDetails` uses the search result's own fields (status, phone, fuel), as Vela
+  does, plus a focused `searchOnce("name address")` merge when pieces are missing. `source.placeDetails(id)` returned nothing useful.
+  Avoid tolls/highways go to `RoutingPrefs` and `directions()`; voice detail goes to `SpokenDetail.mode`; prefs live in "dashline_nav". Speed cameras:
+  `OverpassSpeedCameras.fetchAlongCorridor` at Go, `CameraAlerts.leadDistanceM` for when to warn. Traffic overlay: Vela's Google traffic raster
+  tile template, hidden during a drive. Verified on the Pixel: along-route "gas station" gave 10 results, all priced; the preview card showed open status,
+  gas price, rating and Call, with the traffic overlay and the traffic-colored route. Speed limit is moved to Phase 3 (needs offline regions).
+  Debug harness: `--es navsearch <q> --es along <q>`. Run one CarPreviewActivity at a time: two instances share `DashMapHolder`'s single MapView.
 - 2026-11-23: **0.2.0: maps Phase 1 and the call screen.** The owner's goal for maps: everything Vela Maps does that fits a truck, as Dashline's
   own UI on Vela's engine. The checklist is **`MAPS_PARITY.md`** (keep it current). Done: address search like Vela's app (`DashNav.lookup`:
   Google `suggest` with a 40 km span for addresses + `PhotonGeocoder.suggest(hardBox=false)`, exact house number ranked first; the owner's

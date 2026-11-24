@@ -138,6 +138,16 @@ class CarPreviewActivity : ComponentActivity() {
                 val r = kotlinx.coroutines.withTimeoutOrNull(25_000) {
                     app.seb3thehacker.gearslip.dash.DashNav.state.first { it.phase != app.seb3thehacker.gearslip.dash.DashNav.Phase.ROUTING }
                 }
+                intent.getStringExtra("along")?.let { a ->
+                    kotlinx.coroutines.delay(4000)
+                    val d = app.seb3thehacker.gearslip.dash.DashNav.state.value.details
+                    GearslipLog.i("navsearch: details status=${d?.statusText != null} phone=${d?.phone != null} fuel=${d?.fuelPrice != null}")
+                    app.seb3thehacker.gearslip.dash.DashNav.searchAlongRoute(a)
+                    val al = kotlinx.coroutines.withTimeoutOrNull(40_000) {
+                        app.seb3thehacker.gearslip.dash.DashNav.state.first { it.phase == app.seb3thehacker.gearslip.dash.DashNav.Phase.RESULTS || it.error.isNotEmpty() }
+                    }
+                    GearslipLog.i("navsearch: along '$a' -> ${al?.results?.size ?: 0} results, priced=${al?.results?.count { it.detourSeconds != null } ?: 0} ${al?.error.orEmpty()}")
+                }
                 GearslipLog.i("navsearch: route ${r?.phase} ${r?.routes?.firstOrNull()?.let { "${(it.distanceMeters / 1609).toInt()} mi, ${(it.durationSeconds / 60).toInt()} min, ${it.maneuvers.size} steps" }} ${r?.error.orEmpty()}")
             }
         }
