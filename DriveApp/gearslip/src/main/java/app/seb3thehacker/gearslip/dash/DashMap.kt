@@ -76,12 +76,12 @@ internal object DashMapHolder {
         private set
     var style: Style? = null
         private set
-    private var dark: Boolean? = null
+    private var styleUrl: String? = null
 
-    fun view(context: Context, dark: Boolean): MapView {
+    fun view(context: Context, url: String): MapView {
         view?.let { v ->
             (v.parent as? ViewGroup)?.removeView(v)
-            if (this.dark != dark) setStyle(dark)
+            if (styleUrl != url) setStyle(url)
             return v
         }
         MapLibre.getInstance(context.applicationContext)
@@ -102,17 +102,28 @@ internal object DashMapHolder {
                 m.addOnCameraMoveStartedListener { reason ->
                     if (reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE) DashNav.camera.value = DashNav.Camera.FREE
                 }
-                setStyle(dark)
+                setStyle(pendingUrl ?: LIGHT_STYLE)
             }
             view = this
+            pendingUrl = url
         }
     }
 
-    private fun setStyle(dark: Boolean) {
-        val m = map ?: return
-        this.dark = dark
-        m.setStyle(Style.Builder().fromUri(if (dark) DARK_STYLE else LIGHT_STYLE)) { s ->
+    private var pendingUrl: String? = null
+
+    /** The OpenFreeMap style for a choice ("auto" follows the theme's light or dark). */
+    fun styleUrl(choice: String, dark: Boolean) = when (choice) {
+        "liberty", "bright", "positron", "fiord", "dark" -> "https://tiles.openfreemap.org/styles/$choice"
+        else -> if (dark) DARK_STYLE else LIGHT_STYLE
+    }
+
+    fun setStyle(url: String) {
+        val m = map ?: run { pendingUrl = url; return }
+        if (styleUrl == url && style != null) return
+        styleUrl = url
+        m.setStyle(Style.Builder().fromUri(url)) { s ->
             style = s
+            s.addImage(ARROW_IMG, arrowBitmap())
             // Google's live traffic, as Vela draws it while browsing (hidden during a drive: the
             // route line carries the traffic then).
             s.addSource(org.maplibre.android.style.sources.RasterSource(TRAFFIC_TILES_SRC, org.maplibre.android.style.sources.TileSet("2.2.0", TRAFFIC_TILES).apply { maxZoom = 16f }, 256))
@@ -178,6 +189,16 @@ internal object DashMapHolder {
                     PropertyFactory.circleStrokeWidth(3f),
                 ),
             )
+            // Which way the truck is heading, when the GPS knows.
+            s.addLayer(
+                org.maplibre.android.style.layers.SymbolLayer(ME_ARROW, ME_SRC).withProperties(
+                    PropertyFactory.iconImage(ARROW_IMG),
+                    PropertyFactory.iconRotate(Expression.get("b")),
+                    PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
+                    PropertyFactory.iconAllowOverlap(true),
+                    PropertyFactory.iconIgnorePlacement(true),
+                ),
+            ).also { s.getLayer(ME_ARROW)?.setProperties(PropertyFactory.visibility(Property.VISIBLE)) }
             s.addSource(GeoJsonSource(CAM_SRC))
             s.addLayer(
                 CircleLayer(CAM_DOT, CAM_SRC).withProperties(
@@ -198,6 +219,8 @@ internal object DashMapHolder {
                 ),
             )
             lastRoute = null
+            lastAlts = null
+            lastPins = null
             draw(routeNow, altsNow, meAt, pinsNow)
         }
     }
@@ -211,10 +234,17 @@ internal object DashMapHolder {
     private var meAt: app.vela.core.model.LatLng? = null
 
     /** Updates the map's data; only what changed is re-sent to the GL thread. */
-    fun draw(route: Route?, alts: List<Route>, me: app.vela.core.model.LatLng?, pins: List<app.vela.core.model.LatLng>) {
-        routeNow = route; altsNow = alts; meAt = me; pinsNow = pins
+    private var bearingNow: Float? = null
+
+    fun draw(route: Route?, alts: List<Route>, me: app.vela.core.model.LatLng?, pins: List<app.vela.core.model.LatLng>, bearing: Float? = bearingNow) {
+        routeNow = route; altsNow = alts; meAt = me; pinsNow = pins; bearingNow = bearing
         val s = style ?: return
-        me?.let { s.getSourceAs<GeoJsonSource>(ME_SRC)?.setGeoJson(Feature.fromGeometry(Point.fromLngLat(it.lng, it.lat))) }
+        me?.let {
+            val f = Feature.fromGeometry(Point.fromLngLat(it.lng, it.lat))
+            bearing?.let { b -> f.addNumberProperty("b", b) }
+            s.getSourceAs<GeoJsonSource>(ME_SRC)?.setGeoJson(f)
+            s.getLayer(ME_ARROW)?.setProperties(PropertyFactory.visibility(if (bearing != null) Property.VISIBLE else Property.NONE))
+        }
         if (route !== lastRoute) {
             lastRoute = route
             val line = route?.polyline.orEmpty()
@@ -287,6 +317,22 @@ internal object DashMapHolder {
     private const val ME_SRC = "dash-me"
     private const val ME_DOT = "dash-me-dot"
     private const val ME_HALO = "dash-me-halo"
+    private const val ME_ARROW = "dash-me-arrow"
+    private const val ARROW_IMG = "dash-arrow"
+
+    /** A white-edged blue chevron pointing up (north), rotated by the heading. */
+    private fun arrowBitmap(): android.graphics.Bitmap {
+        val size = 64
+        val bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(bmp)
+        val path = android.graphics.Path().apply {
+            moveTo(size / 2f, 4f); lineTo(size - 10f, size - 8f); lineTo(size / 2f, size * 0.68f); lineTo(10f, size - 8f); close()
+        }
+        c.drawPath(path, android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFFFFF.toInt(); style = android.graphics.Paint.Style.STROKE; strokeWidth = 8f; strokeJoin = android.graphics.Paint.Join.ROUND })
+        c.drawPath(path, android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF3D8BFF.toInt() })
+        return bmp
+    }
+
     private const val CAM_SRC = "dash-cams"
     private const val CAM_DOT = "dash-cams-dot"
     private const val TRAFFIC_TILES_SRC = "dash-traffic-tiles"
@@ -308,6 +354,9 @@ internal fun DashMapView(modifier: Modifier, compact: Boolean) {
     val t = LocalDashTheme.current
     val dark = t.bgTop.red + t.bgTop.green + t.bgTop.blue < 1.2f
     remember { DashNav.init(context); true }
+    val styleChoice by DashNav.mapStyle.collectAsState()
+    val url = DashMapHolder.styleUrl(styleChoice, dark)
+    LaunchedEffect(url) { DashMapHolder.setStyle(url) }
     val fix by DashNav.fix.collectAsState()
     val nav by DashNav.session.state.collectAsState()
     val ui by DashNav.state.collectAsState()
@@ -316,7 +365,7 @@ internal fun DashMapView(modifier: Modifier, compact: Boolean) {
     val traffic by DashNav.trafficLayer.collectAsState()
     val cams by DashNav.cameras.collectAsState()
 
-    AndroidView(modifier = modifier, factory = { c -> DashMapHolder.view(c, dark) })
+    AndroidView(modifier = modifier, factory = { c -> DashMapHolder.view(c, url) })
     LaunchedEffect(traffic, nav.navigating, cams) {
         DashMapHolder.showTraffic(traffic && !nav.navigating)
         DashMapHolder.drawCameras(cams)
@@ -331,7 +380,7 @@ internal fun DashMapView(modifier: Modifier, compact: Boolean) {
             DashNav.Phase.PREVIEW, DashNav.Phase.ROUTING -> listOfNotNull(ui.destination?.location)
             else -> emptyList()
         }
-        DashMapHolder.draw(route, alts, fix?.at, pins)
+        DashMapHolder.draw(route, alts, fix?.at, pins, fix?.bearing?.takeIf { (fix?.speedMps ?: 0f) > 1.5f })
         val f = fix
         val overviewLine = route?.polyline ?: pins
         when {
@@ -392,8 +441,11 @@ internal fun DashMapScreen() {
             DriveScreen()
         } else {
             when (ui.phase) {
-                DashNav.Phase.IDLE, DashNav.Phase.ERROR ->
+                DashNav.Phase.IDLE, DashNav.Phase.ERROR -> {
                     WhereTo(Modifier.align(Alignment.TopStart).padding(10.dp).fillMaxHeight(), ui.error, onType = { typing = true })
+                    ResumeCard(Modifier.align(Alignment.BottomEnd).padding(start = 340.dp, end = 74.dp, bottom = 10.dp))
+                    SpeedBadge(Modifier.align(Alignment.BottomEnd).padding(end = 74.dp, bottom = 90.dp), onlyMoving = true)
+                }
                 DashNav.Phase.SEARCHING -> Status(Modifier.align(Alignment.TopStart).padding(10.dp), "Searching \"${ui.query}\"…")
                 DashNav.Phase.RESULTS -> Results(Modifier.align(Alignment.TopStart).padding(10.dp).fillMaxHeight(), ui.query, ui.results)
                 DashNav.Phase.ROUTING -> Status(Modifier.align(Alignment.TopStart).padding(10.dp), "Getting directions to ${ui.destination?.name.orEmpty()}…")
@@ -414,6 +466,11 @@ private fun MapButtons(modifier: Modifier, navigating: Boolean) {
         RoundButton("+") { DashMapHolder.zoomBy(1.0) }
         RoundButton("−") { DashMapHolder.zoomBy(-1.0) }
         RoundButton(if (northUp) "N" else "⬆", highlight = northUp) { DashNav.northUp.value = !northUp }
+        val styleChoice by DashNav.mapStyle.collectAsState()
+        RoundButton("🗺") {
+            val order = listOf("auto", "liberty", "bright", "positron", "fiord", "dark")
+            DashNav.setMapStyle(order[(order.indexOf(styleChoice) + 1).mod(order.size)])
+        }
         if (!navigating) {
             val traffic by DashNav.trafficLayer.collectAsState()
             RoundButton("🚦", highlight = traffic) { DashNav.setTrafficLayer(!traffic) }
@@ -692,6 +749,8 @@ private fun Preview(modifier: Modifier) {
                     Chip("Avoid tolls", tolls) { DashNav.setAvoidTolls(!tolls) }
                     Chip("Avoid highways", highways) { DashNav.setAvoidHighways(!highways) }
                     Chip("Steps", false) { steps = true }
+                    Chip("↺ Round trip", false) { DashNav.roundTrip() }
+                    if (ui.stops.size >= 2) Chip("⇅ Reverse stops", false) { DashNav.reverseStops() }
                     Chip("Close", false) { options = false }
                 }
             }
@@ -780,6 +839,7 @@ private fun DriveScreen() {
                     TurnCard(Modifier)
                 }
                 when {
+                    nav.paused -> Banner(Modifier.align(Alignment.TopCenter).padding(top = 10.dp), "⏸ Drive paused")
                     nav.nav.offRoute -> Banner(Modifier.align(Alignment.TopCenter).padding(top = 10.dp), "Rerouting…")
                     camera -> Banner(Modifier.align(Alignment.TopCenter).padding(top = 10.dp), "📷 Speed camera ahead")
                 }
@@ -899,13 +959,54 @@ private fun FasterRoute(modifier: Modifier, saving: Double) {
 }
 
 @Composable
-private fun SpeedBadge(modifier: Modifier) {
+private fun SpeedBadge(modifier: Modifier, onlyMoving: Boolean = false) {
     val fix by DashNav.fix.collectAsState()
+    val limit by DashNav.speedLimitMph.collectAsState()
+    val speeding by DashNav.speeding.collectAsState()
     val mph = ((fix?.speedMps ?: 0f) * 2.23694f).roundToInt()
-    Box(modifier.size(62.dp).clip(CircleShape).background(Color.White).border(3.dp, Color(0xFF222222), CircleShape), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Label("$mph", 22.sp, Color.Black, FontWeight.Bold)
-            Label("mph", 10.sp, Color(0xFF444444))
+    if (onlyMoving && mph < 5) return
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(
+            Modifier.size(62.dp).clip(CircleShape).background(if (speeding) Color(0xFFE53935) else Color.White)
+                .border(3.dp, Color(0xFF222222), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Label("$mph", 22.sp, if (speeding) Color.White else Color.Black, FontWeight.Bold)
+                Label("mph", 10.sp, if (speeding) Color.White else Color(0xFF444444))
+            }
+        }
+        // The US speed limit sign, from the installed offline region.
+        limit?.let { l ->
+            Box(
+                Modifier.size(48.dp, 62.dp).clip(RoundedCornerShape(6.dp)).background(Color.White)
+                    .border(2.dp, Color.Black, RoundedCornerShape(6.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Label("SPEED", 8.sp, Color.Black, FontWeight.Bold)
+                    Label("LIMIT", 8.sp, Color.Black, FontWeight.Bold)
+                    Label("$l", 20.sp, Color.Black, FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+/** "Resume drive to …?" after the app or phone restarted mid-drive. */
+@Composable
+private fun ResumeCard(modifier: Modifier) {
+    val t = LocalDashTheme.current
+    val pending by DashNav.pendingResume.collectAsState()
+    val p = pending ?: return
+    Card(modifier.fillMaxWidth()) {
+        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f)) {
+                Label("Resume your drive?", 13.sp, t.accent, FontWeight.SemiBold)
+                Label(p.name, 15.sp, weight = FontWeight.SemiBold)
+            }
+            Tap(onTap = DashNav::dismissResume, modifier = Modifier.size(70.dp, 44.dp), color = t.panelHi) { Label("No", 14.sp) }
+            Tap(onTap = DashNav::resumeDrive, modifier = Modifier.size(90.dp, 44.dp), color = Color(0xFF1E9E4A)) { Label("Resume", 14.sp, Color.White, FontWeight.SemiBold) }
         }
     }
 }
@@ -924,7 +1025,11 @@ private fun TripBar(modifier: Modifier, onAddStop: () -> Unit) {
                 Label("${miles(nav.remainingDistance)} · arrive ${arrival(nav.remainingDuration)}", 15.sp, t.textDim)
                 if (nav.destinationLabel.isNotBlank()) Label(nav.destinationLabel, 12.sp, t.textDim)
             }
-            Tap(onTap = onAddStop, modifier = Modifier.size(70.dp, 46.dp), color = t.panelHi) { Label("+ Stop", 13.sp) }
+            Tap(onTap = { DashNav.setPaused(!nav.paused) }, modifier = Modifier.size(48.dp, 46.dp), color = if (nav.paused) t.accent else t.panelHi) {
+                Label(if (nav.paused) "▶" else "⏸", 16.sp, if (nav.paused) t.bgBottom else t.text)
+            }
+            Spacer(Modifier.width(6.dp))
+            Tap(onTap = onAddStop, modifier = Modifier.size(66.dp, 46.dp), color = t.panelHi) { Label("+ Stop", 13.sp) }
             Spacer(Modifier.width(6.dp))
             // How much the voice says: everything, brief, or highway exits only.
             Tap(

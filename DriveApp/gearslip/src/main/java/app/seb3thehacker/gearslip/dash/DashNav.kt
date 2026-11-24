@@ -113,6 +113,20 @@ object DashNav {
 
     private var prefs: android.content.SharedPreferences? = null
 
+    /** Posted limit where the truck is (from an installed offline region), mph; null when unknown. */
+    val speedLimitMph = MutableStateFlow<Int?>(null)
+    /** More than ~7 mph over the limit. */
+    val speeding = MutableStateFlow(false)
+    /** Map look: "auto" follows the theme; otherwise an OpenFreeMap style. */
+    val mapStyle = MutableStateFlow("auto")
+    /** A drive that was running when the app last stopped, offered back on the next start. */
+    val pendingResume = MutableStateFlow<Spot?>(null)
+    private var pendingStops: List<Spot> = emptyList()
+
+    fun setMapStyle(style: String) { mapStyle.value = style; prefs?.edit()?.putString("mapStyle", style)?.apply() }
+    fun setPaused(on: Boolean) { if (::session.isInitialized) session.setPaused(on) }
+    private lateinit var routeEngine: app.vela.core.data.RouteEngine
+
     fun setAvoidTolls(on: Boolean) { avoidTolls.value = on; app.vela.core.data.RoutingPrefs.avoidTolls = on; prefs?.edit()?.putBoolean("avoidTolls", on)?.apply(); reroutePreview() }
     fun setAvoidHighways(on: Boolean) { avoidHighways.value = on; app.vela.core.data.RoutingPrefs.avoidHighways = on; prefs?.edit()?.putBoolean("avoidHighways", on)?.apply(); reroutePreview() }
     fun setVoiceDetail(m: app.vela.core.nav.SpokenDetail.Mode) { voiceDetail.value = m; app.vela.core.nav.SpokenDetail.mode = m; prefs?.edit()?.putString("voiceDetail", m.name)?.apply() }
@@ -129,7 +143,17 @@ object DashNav {
         if (ready) return
         val c = context.applicationContext
         DashPlaces.init(c)
+        DashOffline.init(c) // before the route engine: it reads OfflineRoot.dir
         prefs = c.getSharedPreferences("dashline_nav", Context.MODE_PRIVATE).also { p ->
+            mapStyle.value = p.getString("mapStyle", "auto") ?: "auto"
+            p.getString("activeDrive", null)?.let { raw ->
+                runCatching {
+                    val o = org.json.JSONObject(raw)
+                    pendingResume.value = Spot.from(o.getJSONObject("dest"))
+                    val a = o.optJSONArray("stops") ?: org.json.JSONArray()
+                    pendingStops = (0 until a.length()).map { Spot.from(a.getJSONObject(it)) }
+                }
+            }
             avoidTolls.value = p.getBoolean("avoidTolls", false)
             avoidHighways.value = p.getBoolean("avoidHighways", false)
             trafficLayer.value = p.getBoolean("traffic", true)
@@ -148,7 +172,7 @@ object DashNav {
             calibration,
             JsTransforms(calibration),
             diag,
-            CoreModule.routeEngine(c),
+            CoreModule.routeEngine(c).also { routeEngine = it },
         )
         source.glRegion = java.util.Locale.getDefault().country.takeIf { it.isNotBlank() }
         val voice = VoiceGuide(c).apply {
@@ -163,7 +187,10 @@ object DashNav {
         // The session's arrival ends Dashline's drive state too.
         scope.launch {
             session.state.collect { s ->
-                if (s.arrived && _state.value.phase == Phase.NAVIGATING) GearslipLog.i("nav: arrived")
+                if (s.arrived && _state.value.phase == Phase.NAVIGATING) {
+                    GearslipLog.i("nav: arrived")
+                    prefs?.edit()?.remove("activeDrive")?.apply()
+                }
             }
         }
     }
@@ -193,8 +220,25 @@ object DashNav {
         runCatching { lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000L, 0f, l, Looper.getMainLooper()) }
     }
 
+    private var limitAt = 0L
+
+    private fun updateLimit(at: LatLng, speedMps: Float?) {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - limitAt < 2_000 || !::routeEngine.isInitialized) return
+        limitAt = now
+        scope.launch {
+            val kmh = withContext(Dispatchers.Default) { runCatching { routeEngine.currentRoadLimit(at.lat, at.lng) }.getOrNull() }
+            val mph = kmh?.let { (it / 1.609344 / 5).let { v -> (Math.round(v) * 5).toInt() } }
+            if (mph != speedLimitMph.value) speedLimitMph.value = mph
+            val over = mph != null && speedMps != null && speedMps * 2.23694f > mph + 7
+            if (over && !speeding.value && voiceOn.value) DirectionsVoice.speak("Speed limit $mph")
+            speeding.value = over
+        }
+    }
+
     private fun onFix(loc: Location) {
         val at = LatLng(loc.latitude, loc.longitude)
+        updateLimit(at, if (loc.hasSpeed()) loc.speed else null)
         _fix.value = Fix(at, if (loc.hasBearing()) loc.bearing else null, if (loc.hasSpeed()) loc.speed else null)
         if (::session.isInitialized && session.state.value.navigating) {
             checkCameras(at, if (loc.hasSpeed()) loc.speed.toDouble() else 0.0)
@@ -298,7 +342,7 @@ object DashNav {
             return
         }
         DashPlaces.addRecent(place)
-        val keepStops = if (_state.value.destination?.location == place.location) _state.value.stops else emptyList()
+        val keepStops = if (_state.value.destination?.location == place.location || place.id == "dash:start") _state.value.stops else emptyList()
         _state.value = _state.value.copy(phase = Phase.ROUTING, destination = place, routes = emptyList(), chosen = 0, stops = keepStops, details = null, alongRoute = false)
         camera.value = Camera.OVERVIEW
         loadDetails(place)
@@ -441,6 +485,38 @@ object DashNav {
         }
     }
 
+    /** Picks the interrupted drive back up: same destination and stops, routed from here. */
+    fun resumeDrive() {
+        val dest = pendingResume.value ?: return
+        pendingResume.value = null
+        _state.value = State(stops = pendingStops.map { it.place() }, destination = dest.place())
+        preview(dest.place())
+        scope.launch { awaitPreviewThenGo() }
+    }
+
+    fun dismissResume() {
+        pendingResume.value = null
+        prefs?.edit()?.remove("activeDrive")?.apply()
+    }
+
+    /** Through the stops and on to the destination, then back to where the trip starts. */
+    fun roundTrip() {
+        val s = _state.value
+        val dest = s.destination ?: return
+        val start = _fix.value?.at ?: return
+        val home = Place(id = "dash:start", name = "Back to start", location = start)
+        _state.value = s.copy(stops = s.stops + dest, destination = home)
+        preview(home)
+    }
+
+    fun reverseStops() {
+        val s = _state.value
+        val dest = s.destination ?: return
+        if (s.stops.size < 2) return
+        _state.value = s.copy(stops = s.stops.reversed())
+        preview(dest)
+    }
+
     fun choose(index: Int) {
         val s = _state.value
         if (index in s.routes.indices) _state.value = s.copy(chosen = index)
@@ -460,6 +536,14 @@ object DashNav {
             fromCourseDeg = _fix.value?.bearing?.toDouble(),
         )
         loadCameras(route)
+        prefs?.edit()?.putString(
+            "activeDrive",
+            org.json.JSONObject()
+                .put("dest", Spot.of(dest, kind = "recent").json())
+                .put("stops", org.json.JSONArray().apply { s.stops.forEach { put(Spot.of(it, kind = "recent").json()) } })
+                .toString(),
+        )?.apply()
+        pendingResume.value = null
         _state.value = s.copy(phase = Phase.NAVIGATING)
         camera.value = Camera.FOLLOW
         GearslipLog.i("nav: navigation started")
@@ -492,6 +576,7 @@ object DashNav {
 
     fun stop() {
         if (::session.isInitialized) session.stop()
+        prefs?.edit()?.remove("activeDrive")?.apply()
         cameras.value = emptyList()
         cameraAhead.value = false
         _state.value = State()

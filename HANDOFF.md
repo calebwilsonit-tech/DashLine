@@ -78,6 +78,15 @@ Hard constraints (from the owner, don't re-propose these):
   (map placeholder with clock, YouTube Music card, call/notification card), music screen, messages list, theme picker
   with 3 themes, touch latency test screen, and the classic Gearslip UI as a fallback. Verified by rendering in the emulator through the
   real projection path. **Not yet tested on the truck.**
+- 2026-11-23: **0.4.0: maps Phase 3.** `dash/DashOffline.kt` installs Vela's routing regions (manifest `VelaLinks.obfManifest()`, 447 regions,
+  e.g. Washington 93 MB) into `filesDir/obf/<id>.obf` + `index.json` (the same layout as Vela's ObfStore). `OfflineRoot.dir` is set before
+  `CoreModule.routeEngine`, which re-reads the index when it changes. UI is in the phone's Dashline settings (suggests the smallest bbox covering the last
+  fix, skips date-line-wrapping boxes). Speed limit: `routeEngine.currentRoadLimit` every 2 s off the main thread, rounded to 5 mph; the speeding
+  alert at +7 mph says "Speed limit N" once per episode. Pause = `NavSession.setPaused`. A running drive is saved in prefs `activeDrive`, offered
+  back by `ResumeCard`, and cleared on End or arrival. Round trip and reverse stops. Map styles go through `DashMapHolder.setStyle(url)`
+  (OpenFreeMap liberty/bright/positron/fiord/dark, "auto" follows the theme). Heading arrow is a SymbolLayer with a generated chevron.
+  Verified on the Pixel: catalog loads; style switch works. **Not verified: a region download and the speed limit** (left for the owner:
+  big download on their connection).
 - 2026-11-23: **0.3.0: maps Phase 2** (see `MAPS_PARITY.md`). `DashNav`: `searchAlongRoute` (Vela `RouteCorridor.ahead`/`searchCenters`,
   then search per center, `RouteCorridor.alongRoute`, then `detourAlongRoute` for `Place.detourSeconds`); a result tapped there becomes a stop
   (`NavSession.addStop` mid-drive, waypoints before Go); `loadDetails` uses the search result's own fields (status, phone, fuel), as Vela

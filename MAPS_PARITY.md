@@ -18,8 +18,8 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Results with rating, category, distance | ✅ 0.2.0 |
 | Search along the route, with minutes added per stop (tap one to add it as a stop) | ✅ 0.3.0 |
 | Open now filter; sort by best, nearest, top rated | ✅ 0.3.0 (price filter ⬜) |
-| Chain's other branches, "More results", "Search this area" | ⬜ Phase 3 |
-| Contacts' addresses in search | ⬜ Phase 3 |
+| Chain's other branches, "More results", "Search this area" | ⬜ Next |
+| Contacts' addresses in search | ⬜ Next |
 
 ## Places
 | Feature | Status |
@@ -28,7 +28,7 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Recent places | ✅ 0.2.0 |
 | Place card: open/closed, closing time, phone (Call), rating, gas prices | ✅ 0.3.0 |
 | Reviews, photos, menus, popular times, Street View | ➖ |
-| Share place / Google Maps links from other apps | ⬜ Phase 3 |
+| Share place / Google Maps links from other apps | ⬜ Next |
 
 ## Routes
 | Feature | Status |
@@ -36,12 +36,12 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Google's route with live traffic and closures | ✅ |
 | Up to four routes with time and traffic; pick one | ✅ 0.2.0 |
 | Route line colored by traffic | ✅ 0.2.0 |
-| Stops: add (before Go or during the drive), remove | ✅ 0.3.0 (reorder, round trip ⬜) |
+| Stops: add (before Go or during the drive), remove, reverse; round trip | ✅ 0.3.0 / 0.4.0 (drag to reorder ⬜) |
 | Avoid tolls / highways (remembered) | ✅ 0.3.0 (ferries, no-toll comparison ⬜) |
-| Depart at / arrive by | ⬜ Phase 3 |
+| Depart at / arrive by | ⬜ Next |
 | Step list before starting | ✅ 0.3.0 |
-| Save a route | ⬜ Phase 3 |
-| Closing-time warning at the destination | ⬜ Phase 3 |
+| Save a route | ⬜ Next |
+| Closing-time warning at the destination | ⬜ Next |
 | Walking, bike, transit, GPX tracks | ➖ |
 
 ## Navigation
@@ -55,32 +55,32 @@ Status: ✅ done · 🟡 partly · ⬜ to do · ➖ not for the truck (phone-onl
 | Rerouting (with banner) | ✅ engine; banner 0.2.0 |
 | Faster route offers (Take it / No) | ✅ 0.2.0 |
 | Your speed | ✅ 0.2.0 |
-| Posted speed limit | ⬜ Phase 3 (Vela reads it from downloaded offline regions) |
+| Posted speed limit (with an offline region installed), speeding alert | ✅ 0.4.0 |
 | Overview / re-center, zoom, north-up or heading-up | ✅ 0.2.0 |
 | Mute spoken turns | ✅ 0.2.0 |
 | Arrival card with trip time and distance | ✅ 0.2.0 |
 | Voice detail levels (everything / brief / highway exits only) | ✅ 0.3.0 |
 | Step list during the drive (tap the turn card) | ✅ 0.3.0 |
-| Pause a drive | ⬜ Phase 3 |
-| Road-ahead bar, turn arrows on the route, cross-street callouts, road shields on the line | ⬜ Phase 3 |
-| Speed cameras (OpenStreetMap, on the map, banner and spoken) | ✅ 0.3.0 (red-light, speeding ⬜) |
-| Resume a drive after a restart | ⬜ Phase 3 |
-| Gas stations only on the map while driving | ⬜ Phase 3 |
+| Pause a drive | ✅ 0.4.0 |
+| Road-ahead bar, turn arrows on the route, cross-street callouts, road shields on the line | ⬜ Next |
+| Speed cameras (OpenStreetMap, on the map, banner and spoken) | ✅ 0.3.0 (red-light cameras ⬜) |
+| Resume a drive after a restart | ✅ 0.4.0 |
+| Gas stations only on the map while driving | ⬜ Next |
 
 ## Map
 | Feature | Status |
 | --- | --- |
 | Open vector map, day/night (follows the theme) | ✅ |
-| Your position | ✅ (heading cone ⬜) |
-| Map styles (Bright, Positron, Fiord, Black, satellite) | ⬜ Phase 3 |
+| Your position with heading arrow | ✅ 0.4.0 |
+| Map styles: auto, Liberty, Bright, Positron, Fiord, Dark | ✅ 0.4.0 (satellite ⬜) |
 | Live traffic overlay while browsing (🚦 toggle) | ✅ 0.3.0 |
-| Place icons from Vela's open data | ⬜ Phase 3 |
-| 3D buildings, tilt | ⬜ Phase 3 |
-| Offline maps and routing | ⬜ Phase 3 |
+| Place icons from Vela's open data | ⬜ Next |
+| 3D buildings, tilt | ⬜ Next |
+| Offline regions (447, from Vela's catalog) for routing and speed limits | ✅ 0.4.0 (offline map tiles and place packs ⬜) |
 
 ## Settings, privacy
 | Feature | Status |
 | --- | --- |
-| Units, voice speed | ⬜ Phase 3 |
-| Google-free mode | ⬜ Phase 3 |
+| Units, voice speed | ⬜ Next |
+| Google-free mode | ⬜ Next |
 | Diagnostics, trip recording | ➖ |

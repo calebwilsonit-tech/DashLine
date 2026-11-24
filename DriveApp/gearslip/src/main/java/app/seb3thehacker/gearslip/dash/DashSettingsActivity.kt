@@ -103,6 +103,9 @@ class DashSettingsActivity : ComponentActivity() {
                         }) { Text(if (saved) "Saved ✓" else "Save") }
 
                         Spacer(Modifier.padding(4.dp))
+                        OfflineMaps()
+
+                        Spacer(Modifier.padding(4.dp))
                         Text("Music", style = MaterialTheme.typography.titleMedium)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Start music when the truck connects", Modifier.weight(1f))
@@ -110,6 +113,70 @@ class DashSettingsActivity : ComponentActivity() {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Offline map regions (Vela's routing files): routes without signal, and the posted speed limit
+ * on the truck screen. Suggested: the region you're in. Big files, so best on Wi-Fi.
+ */
+@androidx.compose.runtime.Composable
+private fun OfflineMaps() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(Unit) { DashOffline.loadCatalog(context) }
+    val st by DashOffline.state.collectAsState()
+    var filter by remember { mutableStateOf("") }
+    val here = remember {
+        val lm = context.getSystemService(android.location.LocationManager::class.java)
+        runCatching {
+            @Suppress("MissingPermission")
+            lm?.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER) ?: lm?.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER)
+        }.getOrNull()
+    }
+    Text("Offline maps", style = MaterialTheme.typography.titleMedium)
+    Text(
+        "Download your state for routes without signal and the speed limit on the truck screen. " +
+            "Files are 30–200 MB, so use Wi-Fi.",
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    if (st.error.isNotEmpty()) Text(st.error, color = MaterialTheme.colorScheme.error)
+    // Boxes only approximate a region: skip ones wrapping the date line, smallest (most local) first.
+    val suggested = here?.let { h ->
+        st.catalog.filter { it.covers(h.latitude, h.longitude) && it.e - it.w < 60 }
+            .sortedBy { (it.n - it.s) * (it.e - it.w) }.take(2)
+    }.orEmpty()
+    val installed = st.catalog.filter { it.id in st.installed }
+    val matches = if (filter.length >= 2) st.catalog.filter { it.name.contains(filter, ignoreCase = true) }.take(12) else emptyList()
+    val rows = (installed + suggested + matches).distinctBy { it.id }
+    if (st.catalog.isEmpty() && st.error.isEmpty()) Text("Loading the region list…")
+    OutlinedTextField(
+        value = filter,
+        onValueChange = { filter = it },
+        label = { Text("Find a state or country") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    rows.forEach { r ->
+        val pct = st.downloading[r.id]
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(r.name)
+                Text(
+                    when {
+                        pct != null -> "Downloading… $pct%"
+                        r.id in st.installed -> "Installed · ${r.sizeMb} MB"
+                        r in suggested -> "Where you are · ${r.sizeMb} MB"
+                        else -> "${r.sizeMb} MB"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            when {
+                pct != null -> Unit
+                r.id in st.installed -> OutlinedButton(onClick = { DashOffline.delete(r) }) { Text("Delete") }
+                else -> Button(onClick = { DashOffline.download(r) }) { Text("Download") }
             }
         }
     }
